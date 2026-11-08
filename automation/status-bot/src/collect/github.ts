@@ -1,7 +1,7 @@
 /** Thin GraphQL I/O. Every query has exactly one paginated connection (`$cursor`). */
 
 export interface Gql {
-  paginate: <T>(query: string, vars?: Record<string, unknown>) => Promise<T>;
+  paginate: <T extends object>(query: string, vars?: Record<string, unknown>) => Promise<T>;
 }
 
 type Nodes<T> = { nodes: T[] };
