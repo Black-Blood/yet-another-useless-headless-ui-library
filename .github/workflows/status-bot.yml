@@ -7,8 +7,6 @@ on:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
       dry-run:

@@ -18,8 +18,10 @@ Every status change is explained in the issue itself.
    manual action, driven only by work on branches and PRs.
 2. User Story, Use Case and Change Request change status based on the state of
    their child (linked) issues.
-3. A forbidden manual status change is reverted no later than one scheduled run
-   (~10 min plus any GitHub delay).
+3. A forbidden manual status change is reverted by the next run of the bot — the
+   next repository event (branch, PR or issue) or a manual run. There is no
+   schedule (owner's decision); every run reconciles all issues, so nothing is lost,
+   only delayed.
 4. An issue cannot be moved to Canceled while code from that issue (or its
    descendants) merged into `develop` has not been reverted.
 5. Every issue shows its current status, the reason for it, and the change history.
@@ -37,10 +39,10 @@ Every status change is explained in the issue itself.
 
 | Constraint | Design consequence |
 |---|---|
-| The Project belongs to a personal account | No Issue Types → the type comes from a label. No `projects_v2_item` webhook → manual changes are detected by a scheduled run |
+| The Project belongs to a personal account | No Issue Types → the type comes from a label. No `projects_v2_item` webhook → manual changes in the Project are detected by the next run |
 | `GITHUB_TOKEN` cannot access a personal account's Project | A PAT `PROJECT_TOKEN` is required (classic, `project` scope) |
 | The repository is public | Outsiders can open issues; their PRs come from forks → `pull_request_target` |
-| GitHub Actions has no trigger for sub-issue or "Blocked by" changes | The scheduled run picks these changes up |
+| GitHub Actions has no trigger for sub-issue or "Blocked by" changes | The next run picks these changes up |
 | Events caused by `GITHUB_TOKEN` do not trigger workflows | Issue writes go through `GITHUB_TOKEN` → the bot does not loop |
 
 ## 3. Data model
@@ -409,8 +411,6 @@ on:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
       dry-run: { type: boolean, default: false }
@@ -472,7 +472,8 @@ First a run with `dry-run: true`, then:
 6. Use Case: all User Stories Done → Done.
 7. Change Request: "Blocked by" a User Story added → In Progress; User Story Done →
    Done; an attempt to cancel while the User Story is active → reverted.
-8. A Task set from New to Done by hand → reverted by the next scheduled run.
+8. A Task set from New to Done by hand → reverted by the next run (trigger one by
+   hand), and the card shows "reverted manual change to Done".
 9. An outside account creates an issue → it does not appear in the Project.
 
 ## 9. One-time repository setup
@@ -489,14 +490,14 @@ First a run with `dry-run: true`, then:
    closed, Item reopened, Pull request merged, Pull request linked to issue,
    Auto-close issue, Auto-add to project, Auto-archive).
 7. Repository variable `STATUS_BOT_LIVE = true` — set it only after a dry run has
-   been reviewed. Until then every run (events and schedule) is a dry run, so
+   been reviewed. Until then every run is a dry run, so
    merging the bot does not start writing.
 
 ## 10. Risks and open questions
 
 | Risk | Mitigation |
 |---|---|
-| GitHub may delay scheduled runs | Repository events trigger the bot immediately; the schedule is a safety net |
+| Without a schedule, changes made only in the Project (status drag, sub-issues, "Blocked by") wait for the next repository event | Every run reconciles everything; close/reopen issues instead of dragging cards where possible, or run the workflow by hand |
 | The API may not return `updatedAt` / the author of a Project field value | Check at the start of implementation; fallback — detection time, no author |
 | Outsiders name fork branches arbitrarily | Fallback through Development; document the naming rule in CONTRIBUTING |
 | A classic PAT grants broader access than needed | `project` scope only; the secret is passed only to the bot step; Deno lets the bot reach only `api.github.com` |
