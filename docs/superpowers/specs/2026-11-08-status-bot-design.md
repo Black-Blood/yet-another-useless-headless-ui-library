@@ -93,9 +93,14 @@ The bot ignores the `I need help` label.
 - **Only PRs with base `develop` count.** A PR targeting another branch is ignored
   with a warning in the card.
 - **Revert:** a merged PR `P` is *reverted* if a PR merged into `develop` has a
-  description containing `Reverts <owner>/<repo>#P` or `Reverts #P` (the format
-  of the Revert button), and that revert PR is not itself reverted. Revert chains
-  are resolved recursively.
+  description containing either
+  - `This reverts commit <sha>`, where `<sha>` (full, or at least 7 characters)
+    is the commit P's merge created — the format of the GitHub Revert button and
+    of `git revert`; or
+  - `Reverts <owner>/<repo>#P` or `Reverts #P`,
+
+  and that revert PR is not itself reverted. Revert chains are resolved
+  recursively.
 - **Active merged PR** — merged into `develop` and not reverted.
 
 ### 3.5 Status card

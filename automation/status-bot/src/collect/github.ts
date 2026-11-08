@@ -41,6 +41,7 @@ export interface RawPull {
   body: string;
   createdAt: string;
   mergedAt: string | null;
+  mergeCommit: { oid: string } | null;
   author: { login: string } | null;
   authorAssociation: string;
   closingIssuesReferences: Nodes<{ number: number }>;
@@ -99,6 +100,7 @@ query($owner: String!, $name: String!, $cursor: String) {
     pullRequests(first: 100, after: $cursor, states: [OPEN, CLOSED, MERGED]) {
       nodes {
         number state isDraft baseRefName headRefName body createdAt mergedAt
+        mergeCommit { oid }
         author { login }
         authorAssociation
         closingIssuesReferences(first: 10) { nodes { number } }

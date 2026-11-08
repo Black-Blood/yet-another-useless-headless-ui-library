@@ -41,6 +41,8 @@ export interface PullFact {
   body: string;
   createdAt: string;
   mergedAt: string | null;
+  /** SHA of the commit the merge created in the base branch; null unless merged */
+  mergeCommit: string | null;
   closingIssues: number[];
 }
 export interface BranchFact { name: string; lastCommitAt: string }
