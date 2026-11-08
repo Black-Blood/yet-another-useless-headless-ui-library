@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { assertEquals, assertMatch } from '@std/assert';
 import { collectWork } from '../src/rules/work.ts';
 import { activeMerged } from '../src/collect/revert.ts';
 import type { BranchFact, PullFact } from '../src/types.ts';
@@ -10,45 +9,45 @@ const run = (pulls: PullFact[], branches: BranchFact[] = [], epoch: string | nul
   return collectWork(46, 'task', f, activeMerged(pulls, 'develop', f.repo), testConfig, epoch);
 };
 
-test('collectWork: links PRs and branches by name', () => {
+Deno.test('collectWork: links PRs and branches by name', () => {
   const w = run([pull({ number: 52, headRef: 'feature/46-x' })], [branch('feature/46-x')]);
-  assert.deepEqual(w.openReady, [52]);
-  assert.deepEqual(w.branches, ['feature/46-x']);
+  assertEquals(w.openReady, [52]);
+  assertEquals(w.branches, ['feature/46-x']);
 });
 
-test('collectWork: Development link is a fallback for unparseable branches', () =>
-  assert.deepEqual(run([pull({ number: 53, headRef: 'patch-1', closingIssues: [46] })]).openReady, [53]));
+Deno.test('collectWork: Development link is a fallback for unparseable branches', () =>
+  assertEquals(run([pull({ number: 53, headRef: 'patch-1', closingIssues: [46] })]).openReady, [53]));
 
-test('collectWork: branch name wins over Development link', () =>
-  assert.deepEqual(run([pull({ number: 54, headRef: 'feature/47-x', closingIssues: [46] })]).openReady, []));
+Deno.test('collectWork: branch name wins over Development link', () =>
+  assertEquals(run([pull({ number: 54, headRef: 'feature/47-x', closingIssues: [46] })]).openReady, []));
 
-test('collectWork: PR into another base is ignored with a warning', () => {
+Deno.test('collectWork: PR into another base is ignored with a warning', () => {
   const w = run([pull({ number: 55, headRef: 'feature/46-x', baseRef: 'main' })]);
-  assert.deepEqual(w.openReady, []);
-  assert.match(w.warnings[0], /PR #55 targets main, not develop — ignored/);
+  assertEquals(w.openReady, []);
+  assertMatch(w.warnings[0], /PR #55 targets main, not develop — ignored/);
 });
 
-test('collectWork: wrong prefix for the type is ignored with a warning', () => {
+Deno.test('collectWork: wrong prefix for the type is ignored with a warning', () => {
   const w = run([], [branch('fix/46-x')]);
-  assert.deepEqual(w.branches, []);
-  assert.match(w.warnings[0], /Branch `fix\/46-x` does not match the type of issue #46 \(task\) — ignored/);
+  assertEquals(w.branches, []);
+  assertMatch(w.warnings[0], /Branch `fix\/46-x` does not match the type of issue #46 \(task\) — ignored/);
 });
 
-test('collectWork: merged PR from a wrong-prefix branch still counts for the Canceled guard', () => {
+Deno.test('collectWork: merged PR from a wrong-prefix branch still counts for the Canceled guard', () => {
   const w = run([pull({ number: 60, headRef: 'fix/46-x', state: 'merged', mergedAt: '2026-11-02T00:00:00Z' })]);
-  assert.deepEqual(w.allActiveMerged, [60]);
-  assert.deepEqual(w.activeMerged, []);
+  assertEquals(w.allActiveMerged, [60]);
+  assertEquals(w.activeMerged, []);
 });
 
-test('collectWork: closed PRs with a wrong prefix leave no warning', () =>
-  assert.deepEqual(run([pull({ number: 61, headRef: 'fix/46-x', state: 'closed' })]).warnings, []));
+Deno.test('collectWork: closed PRs with a wrong prefix leave no warning', () =>
+  assertEquals(run([pull({ number: 61, headRef: 'fix/46-x', state: 'closed' })]).warnings, []));
 
-test('collectWork: fork branch names in warnings are code, not markup', () => {
+Deno.test('collectWork: fork branch names in warnings are code, not markup', () => {
   const w = run([pull({ number: 62, headRef: 'fix/46-@someone<!--`x' })]);
-  assert.equal(w.warnings[0], 'Branch `fix/46-@someone<!--x` does not match the type of issue #46 (task) — ignored');
+  assertEquals(w.warnings[0], 'Branch `fix/46-@someone<!--x` does not match the type of issue #46 (task) — ignored');
 });
 
-test('collectWork: epoch filters merged PRs and stale branches, not open PRs', () => {
+Deno.test('collectWork: epoch filters merged PRs and stale branches, not open PRs', () => {
   const w = run(
     [
       pull({ number: 56, headRef: 'feature/46-a', state: 'merged', mergedAt: '2026-11-02T00:00:00Z' }),
@@ -57,11 +56,11 @@ test('collectWork: epoch filters merged PRs and stale branches, not open PRs', (
     [branch('feature/46-c', '2026-11-02T00:00:00Z')],
     '2026-11-05T00:00:00Z',
   );
-  assert.deepEqual(w.activeMerged, []);
-  assert.deepEqual(w.allActiveMerged, [56]);
-  assert.deepEqual(w.branches, []);
-  assert.deepEqual(w.openReady, [57]);
+  assertEquals(w.activeMerged, []);
+  assertEquals(w.allActiveMerged, [56]);
+  assertEquals(w.branches, []);
+  assertEquals(w.openReady, [57]);
 });
 
-test('collectWork: draft PRs are listed separately', () =>
-  assert.deepEqual(run([pull({ number: 58, headRef: 'feature/46-x', draft: true })]).openDraft, [58]));
+Deno.test('collectWork: draft PRs are listed separately', () =>
+  assertEquals(run([pull({ number: 58, headRef: 'feature/46-x', draft: true })]).openDraft, [58]));

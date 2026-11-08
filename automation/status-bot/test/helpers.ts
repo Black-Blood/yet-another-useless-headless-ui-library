@@ -1,8 +1,7 @@
-import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../src/config.ts';
 import type { BranchFact, Config, Facts, IssueFacts, Marker, PullFact } from '../src/types.ts';
 
-export const CONFIG_PATH = fileURLToPath(new URL('../config.yml', import.meta.url));
+export const CONFIG_PATH = new URL('../config.yml', import.meta.url);
 export const REPO = 'Black-Blood/yet-another-useless-headless-ui-library';
 export const testConfig: Config = loadConfig(CONFIG_PATH);
 

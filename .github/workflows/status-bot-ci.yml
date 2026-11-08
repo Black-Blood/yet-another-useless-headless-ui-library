@@ -17,11 +17,9 @@ jobs:
         working-directory: automation/status-bot
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: denoland/setup-deno@v2
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: automation/status-bot/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+          deno-version: 2.9.8 # bundles TypeScript 6.0.3
+      - run: deno task check
+      - run: deno lint
+      - run: deno task test

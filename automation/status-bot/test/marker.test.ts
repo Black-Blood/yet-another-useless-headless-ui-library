@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { assert, assertEquals, assertFalse, assertMatch } from '@std/assert';
 import { appendHistory, findCard, isBotLogin, parseMarker, renderCard } from '../src/collect/marker.ts';
 import type { HistoryEntry } from '../src/types.ts';
 import { marker, testConfig } from './helpers.ts';
@@ -15,54 +14,54 @@ const body = renderCard(
   testConfig.statuses,
 );
 
-test('renderCard: shows status, reason, warning and history row', () => {
-  assert.match(body, /^🤖 Status: In Review$/m);
-  assert.match(body, /^Reason: PR #52 opened \(not draft\)$/m);
-  assert.match(body, /^⚠️ Branch feature\/49-modal/m);
-  assert.match(body, /\| 11-07 10:12 \| In Progress \| In Review \| PR #52 opened \(not draft\) \|/);
+Deno.test('renderCard: shows status, reason, warning and history row', () => {
+  assertMatch(body, /^🤖 Status: In Review$/m);
+  assertMatch(body, /^Reason: PR #52 opened \(not draft\)$/m);
+  assertMatch(body, /^⚠️ Branch feature\/49-modal/m);
+  assertMatch(body, /\| 11-07 10:12 \| In Progress \| In Review \| PR #52 opened \(not draft\) \|/);
 });
 
-test('parseMarker: round-trips renderCard', () => assert.deepEqual(parseMarker(body), m));
+Deno.test('parseMarker: round-trips renderCard', () => assertEquals(parseMarker(body), m));
 
-test('parseMarker: malformed JSON gives null', () => assert.equal(parseMarker('<!-- status-bot: {oops -->'), null));
+Deno.test('parseMarker: malformed JSON gives null', () => assertEquals(parseMarker('<!-- status-bot: {oops -->'), null));
 
-test('parseMarker: a card written before `held` existed reads held as null', () =>
-  assert.equal(
+Deno.test('parseMarker: a card written before `held` existed reads held as null', () =>
+  assertEquals(
     parseMarker(
       '<!-- status-bot: {"v":1,"status":"done","source":"manual","epoch":null,"at":"2026-11-05T00:00:00Z","verifyAssigned":false,"history":[]} -->',
     )?.held,
     null,
   ));
 
-test('parseMarker: held round-trips', () => {
+Deno.test('parseMarker: held round-trips', () => {
   const held = marker({ status: 'inReview', held: 'done' });
-  assert.equal(parseMarker(renderCard(held, 'x', [], testConfig.statuses))?.held, 'done');
+  assertEquals(parseMarker(renderCard(held, 'x', [], testConfig.statuses))?.held, 'done');
 });
 
-test('isBotLogin: GraphQL and REST spellings', () => {
-  assert.ok(isBotLogin('github-actions'));
-  assert.ok(isBotLogin('github-actions[bot]'));
-  assert.ok(!isBotLogin('Black-Blood'));
+Deno.test('isBotLogin: GraphQL and REST spellings', () => {
+  assert(isBotLogin('github-actions'));
+  assert(isBotLogin('github-actions[bot]'));
+  assertFalse(isBotLogin('Black-Blood'));
 });
 
-test('findCard: ignores a forged card from a human', () =>
-  assert.equal(findCard([{ id: 1, author: 'mallory', createdAt: '2026-11-07T00:00:00Z', body }]), null));
+Deno.test('findCard: ignores a forged card from a human', () =>
+  assertEquals(findCard([{ id: 1, author: 'mallory', createdAt: '2026-11-07T00:00:00Z', body }]), null));
 
-test('findCard: picks the newest bot card', () => {
+Deno.test('findCard: picks the newest bot card', () => {
   const older = renderCard(marker({ status: 'new' }), 'x', [], testConfig.statuses);
   const card = findCard([
     { id: 1, author: 'github-actions', createdAt: '2026-11-01T00:00:00Z', body: older },
     { id: 2, author: 'github-actions[bot]', createdAt: '2026-11-07T00:00:00Z', body },
   ]);
-  assert.equal(card?.commentId, 2);
-  assert.equal(card?.marker.status, 'inReview');
+  assertEquals(card?.commentId, 2);
+  assertEquals(card?.marker.status, 'inReview');
 });
 
-test('appendHistory: newest first, capped at size', () => {
+Deno.test('appendHistory: newest first, capped at size', () => {
   let h: HistoryEntry[] = [];
   for (let i = 0; i < 25; i++) {
     h = appendHistory(h, { at: `2026-11-0${(i % 9) + 1}T00:00:00Z`, from: null, to: 'new', reason: `r${i}` }, 20);
   }
-  assert.equal(h.length, 20);
-  assert.equal(h[0].reason, 'r24');
+  assertEquals(h.length, 20);
+  assertEquals(h[0].reason, 'r24');
 });

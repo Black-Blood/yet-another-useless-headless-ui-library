@@ -318,7 +318,9 @@ triage. The bot neither adds nor processes pull requests in the Project.
 
 ### 6.4 Errors
 
-- Transient API errors (rate limit, 5xx, network) are retried with backoff.
+- Transient API errors (network, 5xx, 429, GraphQL `RATE_LIMITED`) are retried up
+  to 3 times with backoff (1 s, 2 s, 4 s). `Retry-After` is honored; an exhausted
+  rate limit is waited out only if it resets within 60 s, otherwise the call fails.
 - An error in one issue does not stop the others.
 - Run report (`$GITHUB_STEP_SUMMARY`): changed issues, skipped issues with the
   reason, errors. If there were errors, the run fails.
@@ -332,12 +334,13 @@ triage. The bot neither adds nor processes pull requests in the Project.
   status-bot.yml          # runs the bot
   status-bot-ci.yml       # bot tests on PRs
 automation/status-bot/
-  package.json            # "type": "module"; deps: octokit, yaml; dev: typescript, @types/node
-  tsconfig.json           # noEmit, erasableSyntaxOnly, allowImportingTsExtensions
+  deno.json               # tasks (start, test, check), imports: jsr:@std/yaml, jsr:@std/assert
+  deno.lock
   config.yml
   src/
     main.ts               # collect → compute → plan → apply → summary
     config.ts             # loads and validates config.yml
+    client.ts             # GitHub API client on fetch: GraphQL + pagination, REST, retries
     types.ts
     collect/
       github.ts           # GraphQL / REST queries with pagination
@@ -357,9 +360,15 @@ automation/status-bot/
   test/                   # *.test.ts, mirroring src/
 ```
 
-- Node 24 runs TypeScript directly (type stripping) — erasable syntax only: no
-  `enum`, `namespace` or parameter properties; imports use `.ts` extensions.
-- Tests use the built-in `node --test`; type checking uses `tsc --noEmit`.
+- Runtime: **Deno 2.9.8**, which bundles **TypeScript 6.0.3**. Dependencies come
+  only from JSR (`@std/yaml`, `@std/assert` for tests); there are no npm packages.
+  The GitHub API is called through `src/client.ts` on `fetch`.
+- `deno task start` runs the bot with the narrowest permissions:
+  `--allow-env=GITHUB_TOKEN,PROJECT_TOKEN,GITHUB_REPOSITORY,DRY_RUN,FORCE`,
+  `--allow-net=api.github.com`, `--allow-read=./config.yml`. The run report goes
+  to stdout.
+- Tests use `Deno.test` with `@std/assert` (`deno task test`); type checking is
+  `deno task check`; linting is `deno lint`.
 
 ### 7.2 `config.yml`
 
@@ -443,7 +452,7 @@ permissions:
 | `apply/plan.ts` | diff of current vs desired; no actions when everything matches; change limit |
 
 CI (`status-bot-ci.yml`): on PRs that change `automation/**` or
-`.github/workflows/status-bot*.yml` — `npm ci`, `tsc --noEmit`, `node --test`.
+`.github/workflows/status-bot*.yml` — `deno task check`, `deno lint`, `deno task test`.
 
 ### 8.1 Acceptance scenarios (manual, on the real repository)
 
@@ -490,5 +499,5 @@ First a run with `dry-run: true`, then:
 | GitHub may delay scheduled runs | Repository events trigger the bot immediately; the schedule is a safety net |
 | The API may not return `updatedAt` / the author of a Project field value | Check at the start of implementation; fallback — detection time, no author |
 | Outsiders name fork branches arbitrarily | Fallback through Development; document the naming rule in CONTRIBUTING |
-| A classic PAT grants broader access than needed | `project` scope only; the secret is passed only to the bot step |
+| A classic PAT grants broader access than needed | `project` scope only; the secret is passed only to the bot step; Deno lets the bot reach only `api.github.com` |
 | GitHub limits: up to 100 sub-issues per parent, up to 50 "Blocked by" | Enough for this project |

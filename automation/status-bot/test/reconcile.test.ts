@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { assert, assertEquals, assertMatch } from '@std/assert';
 import { reconcile } from '../src/rules/reconcile.ts';
 import { stateFor } from '../src/rules/manual.ts';
 import type { Desired, Facts, IssueFacts, Marker, Status } from '../src/types.ts';
@@ -23,61 +22,61 @@ const carded = (number: number, status: Status, p: Partial<IssueFacts> = {}, m: 
 const run = (f: Facts) => new Map(reconcile(f, testConfig).map((d) => [d.number, d]));
 const one = (f: Facts, n: number): Desired => {
   const d = run(f).get(n);
-  assert.ok(d, `no desired state for #${n}`);
+  assert(d, `no desired state for #${n}`);
   return d;
 };
 const mergedPr = (number: number, headRef: string, p = {}) =>
   pull({ number, headRef, state: 'merged', mergedAt: EARLIER, ...p });
 
-test('reconcile: new task gets a card with a first history entry', () => {
+Deno.test('reconcile: new task gets a card with a first history entry', () => {
   const d = one(facts([issue({ number: 46 })]), 46);
-  assert.equal(d.status, 'new');
-  assert.deepEqual(d.state, { open: true, reason: null });
-  assert.equal(d.marker.at, NOW);
-  assert.deepEqual(d.marker.history, [{ at: NOW, from: null, to: 'new', reason: 'no branches or pull requests' }]);
+  assertEquals(d.status, 'new');
+  assertEquals(d.state, { open: true, reason: null });
+  assertEquals(d.marker.at, NOW);
+  assertEquals(d.marker.history, [{ at: NOW, from: null, to: 'new', reason: 'no branches or pull requests' }]);
 });
 
-test('reconcile: unchanged state keeps marker.at', () => {
+Deno.test('reconcile: unchanged state keeps marker.at', () => {
   const i = carded(46, 'new');
-  assert.deepEqual(one(facts([i]), 46).marker, i.card!.marker);
+  assertEquals(one(facts([i]), 46).marker, i.card!.marker);
 });
 
-test('reconcile: branch moves task to In Progress', () => {
+Deno.test('reconcile: branch moves task to In Progress', () => {
   const d = one(facts([carded(46, 'new')], [], [branch('feature/46-x')]), 46);
-  assert.equal(d.status, 'inProgress');
-  assert.deepEqual(d.marker.history[0], { at: NOW, from: 'new', to: 'inProgress', reason: 'branch feature/46-x exists' });
+  assertEquals(d.status, 'inProgress');
+  assertEquals(d.marker.history[0], { at: NOW, from: 'new', to: 'inProgress', reason: 'branch feature/46-x exists' });
 });
 
-test('reconcile: forbidden manual change is reverted', () => {
+Deno.test('reconcile: forbidden manual change is reverted', () => {
   const i = carded(46, 'new', { projectStatus: 'done', projectStatusUpdatedAt: LATER, projectStatusUpdatedBy: 'ann' });
   const d = one(facts([i]), 46);
-  assert.equal(d.status, 'new');
-  assert.match(d.marker.history[0].reason, /^reverted manual change to Done/);
+  assertEquals(d.status, 'new');
+  assertMatch(d.marker.history[0].reason, /^reverted manual change to Done/);
 });
 
-test('reconcile: cancel with merged code is reverted', () => {
+Deno.test('reconcile: cancel with merged code is reverted', () => {
   const i = carded(46, 'done', { projectStatus: 'canceled', projectStatusUpdatedAt: LATER });
   const d = one(facts([i], [mergedPr(52, 'feature/46-x')]), 46);
-  assert.equal(d.status, 'done');
-  assert.match(d.marker.history[0].reason, /revert PR #52 first/);
+  assertEquals(d.status, 'done');
+  assertMatch(d.marker.history[0].reason, /revert PR #52 first/);
 });
 
-test('reconcile: merged bug goes to verification and QA is assigned', () => {
+Deno.test('reconcile: merged bug goes to verification and QA is assigned', () => {
   const i = carded(49, 'inProgress', { type: 'bug', author: 'stranger' });
   const d = one(facts([i], [mergedPr(52, 'fix/49-x')]), 49);
-  assert.equal(d.status, 'inReview');
-  assert.deepEqual(d.assignees, ['Black-Blood']);
-  assert.equal(d.marker.verifyAssigned, true);
+  assertEquals(d.status, 'inReview');
+  assertEquals(d.assignees, ['Black-Blood']);
+  assertEquals(d.marker.verifyAssigned, true);
 });
 
-test('reconcile: QA is not reassigned on the next run', () => {
+Deno.test('reconcile: QA is not reassigned on the next run', () => {
   const i = carded(49, 'inReview', { type: 'bug', assignees: ['someone'] }, { verifyAssigned: true });
   const d = one(facts([i], [mergedPr(52, 'fix/49-x')]), 49);
-  assert.equal(d.status, 'inReview');
-  assert.equal(d.assignees, null);
+  assertEquals(d.status, 'inReview');
+  assertEquals(d.assignees, null);
 });
 
-test('reconcile: QA sends the bug back', () => {
+Deno.test('reconcile: QA sends the bug back', () => {
   const pulls = [mergedPr(52, 'fix/49-x', { author: 'dev' })];
   const i = carded(
     49,
@@ -86,36 +85,36 @@ test('reconcile: QA sends the bug back', () => {
     { verifyAssigned: true },
   );
   const d = one(facts([i], pulls), 49);
-  assert.equal(d.status, 'new');
-  assert.equal(d.marker.source, 'manual');
-  assert.equal(d.marker.epoch, LATER);
-  assert.equal(d.marker.verifyAssigned, false);
-  assert.deepEqual(d.assignees, ['dev']);
+  assertEquals(d.status, 'new');
+  assertEquals(d.marker.source, 'manual');
+  assertEquals(d.marker.epoch, LATER);
+  assertEquals(d.marker.verifyAssigned, false);
+  assertEquals(d.assignees, ['dev']);
 
   const next = carded(49, 'new', { type: 'bug', projectStatusUpdatedAt: LATER }, d.marker);
-  assert.equal(one(facts([next], pulls), 49).status, 'new');
+  assertEquals(one(facts([next], pulls), 49).status, 'new');
 });
 
-test('reconcile: accepted manual change records who made it', () => {
+Deno.test('reconcile: accepted manual change records who made it', () => {
   const i = carded(46, 'canceled', { projectStatus: 'new', projectStatusUpdatedAt: LATER, projectStatusUpdatedBy: 'ann' });
   const d = one(facts([i]), 46);
-  assert.equal(d.status, 'new');
-  assert.equal(d.marker.history[0].reason, 'changed manually by @ann');
+  assertEquals(d.status, 'new');
+  assertEquals(d.marker.history[0].reason, 'changed manually by @ann');
 });
 
-test('reconcile: story flow', () => {
+Deno.test('reconcile: story flow', () => {
   const task = issue({ number: 46, parent: 10 });
   const pulls = [mergedPr(52, 'feature/46-x')];
   const story = (status: Status, m: Partial<Marker> = {}, children = [46]) =>
     carded(10, status, { type: 'story', children }, m);
 
-  assert.equal(one(facts([task, story('inProgress')], pulls), 10).status, 'inReview');
-  assert.equal(one(facts([task, story('done', { source: 'manual', held: 'done', epoch: AT })], pulls), 10).status, 'done');
+  assertEquals(one(facts([task, story('inProgress')], pulls), 10).status, 'inReview');
+  assertEquals(one(facts([task, story('done', { source: 'manual', held: 'done', epoch: AT })], pulls), 10).status, 'done');
   const bug = issue({ number: 49, type: 'bug', parent: 10 });
-  assert.equal(one(facts([task, bug, story('done', { source: 'manual', held: 'done', epoch: AT }, [46, 49])], pulls), 10).status, 'inReview');
+  assertEquals(one(facts([task, bug, story('done', { source: 'manual', held: 'done', epoch: AT }, [46, 49])], pulls), 10).status, 'inReview');
 });
 
-test('reconcile: use case closes in the same run as its last story', () => {
+Deno.test('reconcile: use case closes in the same run as its last story', () => {
   const f = facts(
     [
       issue({ number: 46, parent: 10 }),
@@ -124,10 +123,10 @@ test('reconcile: use case closes in the same run as its last story', () => {
     ],
     [mergedPr(52, 'feature/46-x')],
   );
-  assert.equal(one(f, 5).status, 'done');
+  assertEquals(one(f, 5).status, 'done');
 });
 
-test('reconcile: change request follows blocked-by stories', () => {
+Deno.test('reconcile: change request follows blocked-by stories', () => {
   const f = facts(
     [
       issue({ number: 46, parent: 10 }),
@@ -136,65 +135,65 @@ test('reconcile: change request follows blocked-by stories', () => {
     ],
     [mergedPr(52, 'feature/46-x')],
   );
-  assert.equal(one(f, 7).status, 'done');
+  assertEquals(one(f, 7).status, 'done');
 });
 
-test('reconcile: canceled is sticky', () =>
-  assert.equal(one(facts([carded(46, 'canceled')], [], [branch('feature/46-x')]), 46).status, 'canceled'));
+Deno.test('reconcile: canceled is sticky', () =>
+  assertEquals(one(facts([carded(46, 'canceled')], [], [branch('feature/46-x')]), 46).status, 'canceled'));
 
 
 
-test('reconcile: an unmerged PR no longer undoes an accepted bug Done', () => {
+Deno.test('reconcile: an unmerged PR no longer undoes an accepted bug Done', () => {
   const accepted = { held: 'done' as const, source: 'manual' as const, epoch: AT };
   const bug = (m: Partial<Marker>, status: Status) => carded(49, status, { type: 'bug' }, m);
   const prOpen = pull({ number: 70, headRef: 'fix/49-again', createdAt: LATER });
   const afterOpen = one(facts([bug(accepted, 'done')], [prOpen]), 49);
-  assert.equal(afterOpen.status, 'inReview');
+  assertEquals(afterOpen.status, 'inReview');
   const closed = { ...prOpen, state: 'closed' as const };
-  assert.equal(one(facts([bug(afterOpen.marker, 'inReview')], [closed]), 49).status, 'done');
+  assertEquals(one(facts([bug(afterOpen.marker, 'inReview')], [closed]), 49).status, 'done');
 });
 
-test('reconcile: outsider PRs do not touch a Done task', () => {
+Deno.test('reconcile: outsider PRs do not touch a Done task', () => {
   const fork = pull({ number: 71, headRef: 'patch-1', closingIssues: [46], author: 'stranger', authorIsMember: false });
   const d = one(facts([carded(46, 'done')], [mergedPr(52, 'feature/46-x'), fork]), 46);
-  assert.equal(d.status, 'done');
+  assertEquals(d.status, 'done');
 });
 
-test('reconcile: member PRs still reopen a Done task', () => {
+Deno.test('reconcile: member PRs still reopen a Done task', () => {
   const pr = pull({ number: 72, headRef: 'feature/46-more' });
-  assert.equal(one(facts([carded(46, 'done')], [mergedPr(52, 'feature/46-x'), pr]), 46).status, 'inReview');
+  assertEquals(one(facts([carded(46, 'done')], [mergedPr(52, 'feature/46-x'), pr]), 46).status, 'inReview');
 });
 
-test('reconcile: an accepted story Done survives a task PR opened and closed', () => {
+Deno.test('reconcile: an accepted story Done survives a task PR opened and closed', () => {
   const task = (status: Status) => carded(46, status, { parent: 10 });
   const merged = mergedPr(52, 'feature/46-x');
   const prOpen = pull({ number: 73, headRef: 'feature/46-more', createdAt: LATER });
   const story = (m: Partial<Marker>, status: Status) => carded(10, status, { type: 'story', children: [46] }, m);
   const first = one(facts([task('done'), story({ held: 'done', source: 'manual', epoch: AT }, 'done')], [merged, prOpen]), 10);
-  assert.equal(first.status, 'inProgress');
+  assertEquals(first.status, 'inProgress');
   const closed = { ...prOpen, state: 'closed' as const };
-  assert.equal(one(facts([task('done'), story(first.marker, 'inProgress')], [merged, closed]), 10).status, 'done');
+  assertEquals(one(facts([task('done'), story(first.marker, 'inProgress')], [merged, closed]), 10).status, 'done');
 });
 
-test('reconcile: a bug created after the story was accepted needs a new manual Done', () => {
+Deno.test('reconcile: a bug created after the story was accepted needs a new manual Done', () => {
   const f = facts([
     carded(46, 'done', { parent: 10 }),
     // QA already accepted this bug as Done, so the bug itself stays Done
     carded(49, 'done', { type: 'bug', parent: 10, createdAt: LATER }, { held: 'done', source: 'manual', epoch: LATER }),
     carded(10, 'done', { type: 'story', children: [46, 49] }, { held: 'done', source: 'manual', epoch: AT }),
   ], [mergedPr(52, 'feature/46-x')]);
-  assert.equal(one(f, 10).status, 'inReview');
+  assertEquals(one(f, 10).status, 'inReview');
 });
 
-test('reconcile: code merged into a child after acceptance needs a new manual Done', () => {
+Deno.test('reconcile: code merged into a child after acceptance needs a new manual Done', () => {
   const f = facts([
     carded(46, 'done', { parent: 10 }),
     carded(10, 'done', { type: 'story', children: [46] }, { held: 'done', source: 'manual', epoch: AT }),
   ], [mergedPr(52, 'feature/46-x', { mergedAt: LATER })]);
-  assert.equal(one(f, 10).status, 'inReview');
+  assertEquals(one(f, 10).status, 'inReview');
 });
 
-test('reconcile: cancel guard ignores code of blockers that are not stories or use cases', () => {
+Deno.test('reconcile: cancel guard ignores code of blockers that are not stories or use cases', () => {
   const f = facts(
     [
       carded(20, 'canceled', { type: 'story' }),
@@ -203,10 +202,10 @@ test('reconcile: cancel guard ignores code of blockers that are not stories or u
     ],
     [mergedPr(99, 'feature/10-x')],
   );
-  assert.equal(one(f, 30).status, 'canceled');
+  assertEquals(one(f, 30).status, 'canceled');
 });
 
-test('reconcile: cancel guard ignores code of a task placed directly under a use case', () => {
+Deno.test('reconcile: cancel guard ignores code of a task placed directly under a use case', () => {
   const f = facts(
     [
       carded(46, 'done', { parent: 5 }),
@@ -214,44 +213,44 @@ test('reconcile: cancel guard ignores code of a task placed directly under a use
     ],
     [mergedPr(52, 'feature/46-x')],
   );
-  assert.equal(one(f, 5).status, 'canceled');
+  assertEquals(one(f, 5).status, 'canceled');
 });
 
-test('reconcile: cancel guard sees code merged from a wrong-prefix branch', () => {
+Deno.test('reconcile: cancel guard sees code merged from a wrong-prefix branch', () => {
   const i = carded(46, 'new', { projectStatus: 'canceled', projectStatusUpdatedAt: LATER });
   const d = one(facts([i], [mergedPr(52, 'fix/46-x')]), 46);
-  assert.equal(d.status, 'new');
-  assert.match(d.marker.history[0].reason, /revert PR #52 first/);
+  assertEquals(d.status, 'new');
+  assertMatch(d.marker.history[0].reason, /revert PR #52 first/);
 });
 
-test('reconcile: issue without a type label is left alone', () => {
+Deno.test('reconcile: issue without a type label is left alone', () => {
   const d = one(facts([issue({ number: 46, type: null, typeProblem: 'no type label' })]), 46);
-  assert.equal(d.status, null);
-  assert.equal(d.state, null);
-  assert.deepEqual(d.warnings, ['no type label']);
+  assertEquals(d.status, null);
+  assertEquals(d.state, null);
+  assertEquals(d.warnings, ['no type label']);
 });
 
-test('reconcile: type change keeps epoch and recomputes', () => {
+Deno.test('reconcile: type change keeps epoch and recomputes', () => {
   const i = carded(46, 'new', { type: 'bug' }, { source: 'manual', epoch: AT });
   const d = one(facts([i], [pull({ number: 53, headRef: 'fix/46-x' })]), 46);
-  assert.equal(d.status, 'inReview');
-  assert.equal(d.marker.epoch, AT);
+  assertEquals(d.status, 'inReview');
+  assertEquals(d.marker.epoch, AT);
 });
 
-test('reconcile: ignores wrong child types with a warning', () => {
+Deno.test('reconcile: ignores wrong child types with a warning', () => {
   const f = facts([
     carded(10, 'new', { type: 'story', children: [5] }),
     carded(5, 'new', { type: 'usecase', parent: 10 }),
   ]);
-  assert.match(one(f, 10).warnings.join('\n'), /Child #5 is a use case; only tasks and bugs count here — ignored/);
+  assertMatch(one(f, 10).warnings.join('\n'), /Child #5 is a use case; only tasks and bugs count here — ignored/);
 });
 
-test('reconcile: canceled story lists children that are not canceled', () => {
+Deno.test('reconcile: canceled story lists children that are not canceled', () => {
   const f = facts([issue({ number: 46, parent: 10 }), carded(10, 'canceled', { type: 'story', children: [46] })]);
-  assert.match(one(f, 10).warnings.join('\n'), /Children not canceled: #46/);
+  assertMatch(one(f, 10).warnings.join('\n'), /Children not canceled: #46/);
 });
 
-test('reconcile: cancel of a story is guarded by its children\'s code', () => {
+Deno.test('reconcile: cancel of a story is guarded by its children\'s code', () => {
   const f = facts(
     [
       issue({ number: 46, parent: 10 }),
@@ -260,6 +259,6 @@ test('reconcile: cancel of a story is guarded by its children\'s code', () => {
     [mergedPr(52, 'feature/46-x')],
   );
   const d = one(f, 10);
-  assert.equal(d.status, 'inReview');
-  assert.match(d.marker.history[0].reason, /#52/);
+  assertEquals(d.status, 'inReview');
+  assertMatch(d.marker.history[0].reason, /#52/);
 });

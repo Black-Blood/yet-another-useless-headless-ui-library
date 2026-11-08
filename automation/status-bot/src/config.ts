@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { parse } from 'yaml';
+import { parse } from '@std/yaml';
 import { ISSUE_TYPES, STATUSES } from './types.ts';
 import type { Config } from './types.ts';
 
@@ -59,6 +58,6 @@ export function parseConfig(text: string): Config {
   };
 }
 
-export function loadConfig(path: string): Config {
-  return parseConfig(readFileSync(path, 'utf8'));
+export function loadConfig(path: string | URL): Config {
+  return parseConfig(Deno.readTextFileSync(path));
 }

@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { assertEquals, assertMatch } from '@std/assert';
 import { execute } from '../src/apply/execute.ts';
 import type { Clients } from '../src/apply/execute.ts';
 import { renderSummary } from '../src/apply/summary.ts';
@@ -15,17 +14,15 @@ const meta: ProjectMeta = {
 function fakeClients(failOn: (call: string) => boolean = () => false) {
   const calls: { call: string; params: Record<string, unknown> }[] = [];
   const clients: Clients = {
-    projectGql: async (query, vars) => {
+    projectGql: (query, vars) => {
       const call = /mutation[^{]*\{\s*(\w+)/.exec(query)?.[1] ?? 'unknown';
       calls.push({ call, params: vars });
-      if (failOn(call)) throw new Error(`${call} failed`);
-      return {};
+      return failOn(call) ? Promise.reject(new Error(`${call} failed`)) : Promise.resolve({});
     },
     rest: {
-      request: async (route, params) => {
+      request: (route, params) => {
         calls.push({ call: route, params });
-        if (failOn(route)) throw new Error(`${route} failed`);
-        return {};
+        return failOn(route) ? Promise.reject(new Error(`${route} failed`)) : Promise.resolve({});
       },
     },
   };
@@ -42,19 +39,19 @@ const all: Action[] = [
   { kind: 'setAssignees', issue: 4, assignees: ['qa'] },
 ];
 
-test('execute: dry run makes no calls', async () => {
+Deno.test('execute: dry run makes no calls', async () => {
   const { clients, calls } = fakeClients();
   const r = await execute(all, clients, meta, REPO, true);
-  assert.equal(calls.length, 0);
-  assert.equal(r.done.length, all.length);
-  assert.deepEqual(r.errors, []);
+  assertEquals(calls.length, 0);
+  assertEquals(r.done.length, all.length);
+  assertEquals(r.errors, []);
 });
 
-test('execute: maps each action to its API call', async () => {
+Deno.test('execute: maps each action to its API call', async () => {
   const { clients, calls } = fakeClients();
   await execute(all, clients, meta, REPO, false);
   const base = { owner: 'Black-Blood', repo: 'yet-another-useless-headless-ui-library' };
-  assert.deepEqual(calls, [
+  assertEquals(calls, [
     { call: 'addProjectV2ItemById', params: { projectId: 'PVT_1', contentId: 'I_1' } },
     { call: 'POST /repos/{owner}/{repo}/issues/{issue_number}/comments', params: { ...base, issue_number: 2, body: 'new card' } },
     { call: 'PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}', params: { ...base, comment_id: 77, body: 'edited card' } },
@@ -71,17 +68,17 @@ test('execute: maps each action to its API call', async () => {
   ]);
 });
 
-test('execute: an error skips the rest of that issue only', async () => {
+Deno.test('execute: an error skips the rest of that issue only', async () => {
   const { clients, calls } = fakeClients((c) => c === 'updateProjectV2ItemFieldValue');
   const r = await execute(all, clients, meta, REPO, false);
-  assert.equal(calls.filter((c) => c.params.issue_number === 3 && 'state' in c.params).length, 0);
-  assert.equal(calls.filter((c) => c.params.issue_number === 4).length, 2);
-  assert.equal(r.errors.length, 1);
-  assert.equal(r.errors[0].action.kind, 'setStatus');
-  assert.match(r.errors[0].message, /updateProjectV2ItemFieldValue failed/);
+  assertEquals(calls.filter((c) => c.params.issue_number === 3 && 'state' in c.params).length, 0);
+  assertEquals(calls.filter((c) => c.params.issue_number === 4).length, 2);
+  assertEquals(r.errors.length, 1);
+  assertEquals(r.errors[0].action.kind, 'setStatus');
+  assertMatch(r.errors[0].message, /updateProjectV2ItemFieldValue failed/);
 });
 
-test('renderSummary: lists changes, skips and errors', () => {
+Deno.test('renderSummary: lists changes, skips and errors', () => {
   const md = renderSummary({
     result: { done: [all[3]], errors: [{ action: all[6], message: 'boom' }] },
     blocked: false,
@@ -89,13 +86,13 @@ test('renderSummary: lists changes, skips and errors', () => {
     planned: all,
     skipped: [{ issue: 5, reason: 'no type label' }],
   });
-  assert.match(md, /#3 \| set status → inReview/);
-  assert.match(md, /#5: no type label/);
-  assert.match(md, /#4 set assignees → qa: boom/);
+  assertMatch(md, /#3 \| set status → inReview/);
+  assertMatch(md, /#5: no type label/);
+  assertMatch(md, /#4 set assignees → qa: boom/);
 });
 
-test('renderSummary: says nothing was written when blocked or dry run', () => {
+Deno.test('renderSummary: says nothing was written when blocked or dry run', () => {
   const base = { result: { done: [], errors: [] }, planned: all, skipped: [] };
-  assert.match(renderSummary({ ...base, blocked: true, dryRun: false }), /Nothing was written/);
-  assert.match(renderSummary({ ...base, blocked: false, dryRun: true }), /Nothing was written/);
+  assertMatch(renderSummary({ ...base, blocked: true, dryRun: false }), /Nothing was written/);
+  assertMatch(renderSummary({ ...base, blocked: false, dryRun: true }), /Nothing was written/);
 });

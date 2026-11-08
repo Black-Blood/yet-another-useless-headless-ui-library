@@ -1,54 +1,43 @@
-import { appendFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { Octokit } from 'octokit';
+/**
+ * Entry point. Run with `deno task start`; permissions are limited to the listed environment variables,
+ * reading config.yml and network access to api.github.com. The run report goes to stdout.
+ */
 import { execute } from './apply/execute.ts';
 import type { Clients, RunResult } from './apply/execute.ts';
 import { buildPlan, planAdditions, planIssue } from './apply/plan.ts';
 import { renderSummary } from './apply/summary.ts';
+import { createClient } from './client.ts';
 import { toFacts } from './collect/facts.ts';
 import { fetchProject, fetchRepo } from './collect/github.ts';
 import { loadConfig } from './config.ts';
 import { reconcile } from './rules/reconcile.ts';
 
 function required(name: string): string {
-  const value = process.env[name];
+  const value = Deno.env.get(name);
   if (!value) {
     console.error(`${name} is required`);
-    process.exit(1);
+    Deno.exit(1);
   }
   return value;
-}
-
-function client(auth: string): Octokit {
-  return new Octokit({
-    auth,
-    throttle: {
-      onRateLimit: (_after: number, _options: unknown, _octokit: unknown, retryCount: number) => retryCount < 2,
-      onSecondaryRateLimit: (_after: number, _options: unknown, _octokit: unknown, retryCount: number) => retryCount < 2,
-    },
-  });
 }
 
 async function main(): Promise<number> {
   const token = required('GITHUB_TOKEN');
   const projectToken = required('PROJECT_TOKEN');
   const repo = required('GITHUB_REPOSITORY');
-  const dryRun = process.env.DRY_RUN === 'true';
-  const force = process.env.FORCE === 'true';
-  const config = loadConfig(fileURLToPath(new URL('../config.yml', import.meta.url)));
+  const dryRun = Deno.env.get('DRY_RUN') === 'true';
+  const force = Deno.env.get('FORCE') === 'true';
+  const config = loadConfig(new URL('../config.yml', import.meta.url));
   const [owner, name] = repo.split('/');
 
-  const repoKit = client(token);
-  const projectKit = client(projectToken);
-  const clients: Clients = {
-    projectGql: (query, vars) => projectKit.graphql(query, vars),
-    rest: { request: (route, params) => repoKit.request(route, params) },
-  };
+  const repoClient = createClient({ token });
+  const projectClient = createClient({ token: projectToken });
+  const clients: Clients = { projectGql: projectClient.graphql, rest: { request: repoClient.request } };
   const collect = async () =>
     toFacts(
       {
-        project: await fetchProject(projectKit.graphql, config.project.owner, config.project.number, config.project.statusField),
-        repo: await fetchRepo(repoKit.graphql, owner, name),
+        project: await fetchProject(projectClient, config.project.owner, config.project.number, config.project.statusField),
+        repo: await fetchRepo(repoClient, owner, name),
       },
       config,
       repo,
@@ -77,16 +66,16 @@ async function main(): Promise<number> {
   );
   if (!plan.blocked) merge(await execute(plan.actions, clients, meta, repo, dryRun));
 
-  const summary = renderSummary({
-    result,
-    blocked: plan.blocked,
-    dryRun,
-    planned: [...additions, ...plan.actions],
-    skipped: desired.filter((d) => d.status === null).map((d) => ({ issue: d.number, reason: d.reason })),
-  });
-  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
-  console.log(summary);
+  console.log(
+    renderSummary({
+      result,
+      blocked: plan.blocked,
+      dryRun,
+      planned: [...additions, ...plan.actions],
+      skipped: desired.filter((d) => d.status === null).map((d) => ({ issue: d.number, reason: d.reason })),
+    }),
+  );
   return plan.blocked || result.errors.length > 0 ? 1 : 0;
 }
 
-process.exitCode = await main();
+Deno.exitCode = await main();
