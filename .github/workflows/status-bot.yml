@@ -1,0 +1,53 @@
+name: status-bot
+
+on:
+  create:
+  delete:
+  pull_request_target:
+    types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
+  issues:
+    types: [opened, closed, reopened, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Only plan and report; write nothing
+        type: boolean
+        default: false
+      force:
+        description: Ignore the change limit (maxChangesPerRun)
+        type: boolean
+        default: false
+
+concurrency:
+  group: status-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Always the bot's own code from the default branch — never the PR head (pull_request_target).
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.8 # bundles TypeScript 6.0.3
+      - name: Reconcile statuses
+        working-directory: automation/status-bot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          # Kill switch: every run is a dry run until the repository variable STATUS_BOT_LIVE is "true".
+          DRY_RUN: ${{ inputs.dry-run || vars.STATUS_BOT_LIVE != 'true' }}
+          FORCE: ${{ inputs.force || false }}
+        # The report goes to stdout; tee adds it to the run summary (bash runs with pipefail).
+        shell: bash
+        run: deno task start | tee -a "$GITHUB_STEP_SUMMARY"
