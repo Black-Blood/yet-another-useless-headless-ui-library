@@ -24,7 +24,7 @@ const kinds = (a: Action[]) => a.map((x) => x.kind);
 test('planIssue: nothing to do when everything matches', () =>
   assert.deepEqual(planIssue(inSync(), desired(), testConfig), []));
 
-test('planIssue: action order', () => {
+test('planIssue: action order — assignees before the card, so a failed write is retried', () => {
   const current = inSync({
     projectStatus: 'new',
     state: { open: false, reason: 'completed' },
@@ -32,10 +32,10 @@ test('planIssue: action order', () => {
     card: { commentId: 7, body: 'old', marker: m },
   });
   assert.deepEqual(kinds(planIssue(current, desired({ assignees: ['b'] }), testConfig)), [
+    'setAssignees',
     'writeCard',
     'setStatus',
     'setState',
-    'setAssignees',
   ]);
 });
 

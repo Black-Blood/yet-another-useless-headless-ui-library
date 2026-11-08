@@ -468,6 +468,9 @@ First a run with `dry-run: true`, then:
 6. Project #4 → Workflows: disable all built-in workflows (Item added, Item
    closed, Item reopened, Pull request merged, Pull request linked to issue,
    Auto-close issue, Auto-add to project, Auto-archive).
+7. Repository variable `STATUS_BOT_LIVE = true` — set it only after a dry run has
+   been reviewed. Until then every run (events and schedule) is a dry run, so
+   merging the bot does not start writing.
 
 ## 10. Risks and open questions
 

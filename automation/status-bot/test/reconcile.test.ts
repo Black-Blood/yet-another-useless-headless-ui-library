@@ -142,6 +142,36 @@ test('reconcile: change request follows blocked-by stories', () => {
 test('reconcile: canceled is sticky', () =>
   assert.equal(one(facts([carded(46, 'canceled')], [], [branch('feature/46-x')]), 46).status, 'canceled'));
 
+test('reconcile: cancel guard ignores code of blockers that are not stories or use cases', () => {
+  const f = facts(
+    [
+      carded(20, 'canceled', { type: 'story' }),
+      carded(10, 'done'),
+      carded(30, 'inProgress', { type: 'cr', blockedBy: [20, 10], projectStatus: 'canceled', projectStatusUpdatedAt: LATER }),
+    ],
+    [mergedPr(99, 'feature/10-x')],
+  );
+  assert.equal(one(f, 30).status, 'canceled');
+});
+
+test('reconcile: cancel guard ignores code of a task placed directly under a use case', () => {
+  const f = facts(
+    [
+      carded(46, 'done', { parent: 5 }),
+      carded(5, 'new', { type: 'usecase', children: [46], projectStatus: 'canceled', projectStatusUpdatedAt: LATER }),
+    ],
+    [mergedPr(52, 'feature/46-x')],
+  );
+  assert.equal(one(f, 5).status, 'canceled');
+});
+
+test('reconcile: cancel guard sees code merged from a wrong-prefix branch', () => {
+  const i = carded(46, 'new', { projectStatus: 'canceled', projectStatusUpdatedAt: LATER });
+  const d = one(facts([i], [mergedPr(52, 'fix/46-x')]), 46);
+  assert.equal(d.status, 'new');
+  assert.match(d.marker.history[0].reason, /revert PR #52 first/);
+});
+
 test('reconcile: issue without a type label is left alone', () => {
   const d = one(facts([issue({ number: 46, type: null, typeProblem: 'no type label' })]), 46);
   assert.equal(d.status, null);

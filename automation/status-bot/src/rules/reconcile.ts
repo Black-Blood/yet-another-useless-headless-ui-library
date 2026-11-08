@@ -39,10 +39,14 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
     const i = get(n);
     if (!i || seen.has(n)) return [];
     seen.add(n);
+    // Only the relationships the rules count (§3.3): story → task/bug, usecase → story, cr → story/usecase.
+    const of = (ids: number[], allowed: IssueType[]) =>
+      ids.filter((c) => allowed.includes(get(c)?.type as IssueType)).flatMap((c) => codeOf(c, seen));
     let code: number[] = [];
     if (i.type === 'task' || i.type === 'bug') code = workOf(i, null).allActiveMerged;
-    else if (i.type === 'story' || i.type === 'usecase') code = i.children.flatMap((c) => codeOf(c, seen));
-    else if (i.type === 'cr') code = i.blockedBy.flatMap((c) => codeOf(c, seen));
+    else if (i.type === 'story') code = of(i.children, ['task', 'bug']);
+    else if (i.type === 'usecase') code = of(i.children, ['story']);
+    else if (i.type === 'cr') code = of(i.blockedBy, ['story', 'usecase']);
     const unique = [...new Set(code)].sort((a, b) => a - b);
     codeMemo.set(n, unique);
     return unique;

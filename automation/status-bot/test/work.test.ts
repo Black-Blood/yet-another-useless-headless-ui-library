@@ -31,7 +31,21 @@ test('collectWork: PR into another base is ignored with a warning', () => {
 test('collectWork: wrong prefix for the type is ignored with a warning', () => {
   const w = run([], [branch('fix/46-x')]);
   assert.deepEqual(w.branches, []);
-  assert.match(w.warnings[0], /Branch fix\/46-x does not match the type of issue #46 \(task\) — ignored/);
+  assert.match(w.warnings[0], /Branch `fix\/46-x` does not match the type of issue #46 \(task\) — ignored/);
+});
+
+test('collectWork: merged PR from a wrong-prefix branch still counts for the Canceled guard', () => {
+  const w = run([pull({ number: 60, headRef: 'fix/46-x', state: 'merged', mergedAt: '2026-11-02T00:00:00Z' })]);
+  assert.deepEqual(w.allActiveMerged, [60]);
+  assert.deepEqual(w.activeMerged, []);
+});
+
+test('collectWork: closed PRs with a wrong prefix leave no warning', () =>
+  assert.deepEqual(run([pull({ number: 61, headRef: 'fix/46-x', state: 'closed' })]).warnings, []));
+
+test('collectWork: fork branch names in warnings are code, not markup', () => {
+  const w = run([pull({ number: 62, headRef: 'fix/46-@someone<!--`x' })]);
+  assert.equal(w.warnings[0], 'Branch `fix/46-@someone<!--x` does not match the type of issue #46 (task) — ignored');
 });
 
 test('collectWork: epoch filters merged PRs and stale branches, not open PRs', () => {
