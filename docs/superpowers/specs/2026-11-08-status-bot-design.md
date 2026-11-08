@@ -97,7 +97,8 @@ The bot ignores the `I need help` label.
   tasks and bugs get branches. A branch `<N>-<slug>` without a prefix (the default
   name of GitHub's "Create a branch" button) is still accepted for a Task or Bug,
   although the branch-name ruleset (§9) normally prevents creating it.
-- **Releases** are marked with tags (`vX.Y.Z`) on `main`, not with branches.
+- **`develop` is the only long-lived branch** (and the default). There is no `main`.
+- **Releases** are made by creating a tag (`vX.Y.Z`) on `develop`, not with branches or PRs.
 - **Linking a PR to an issue:**
   1. by head branch name (same pattern, including PRs from forks);
   2. fallback — a PR linked to the issue through the **Development** sidebar
@@ -499,7 +500,7 @@ First a run with `dry-run: true`, then:
 
 ## 9. One-time repository setup
 
-1. Create the `develop` branch from `main` and make it the default branch.
+1. `develop` is the default and only long-lived branch (there is no `main`).
 2. Settings → General → Pull Requests: enable **Automatically delete head
    branches**.
 3. Settings → General → Issues: disable automatic closing of issues when linked
