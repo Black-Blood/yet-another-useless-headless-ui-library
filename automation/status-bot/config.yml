@@ -1,0 +1,24 @@
+project:
+  owner: Black-Blood
+  number: 4
+  statusField: Status
+statuses:
+  new: New
+  inProgress: In Progress
+  inReview: In Review
+  done: Done
+  canceled: Canceled
+integrationBranch: develop
+branchPrefix:
+  task: feat
+  bug: fix
+typeLabels:
+  bug: Bug
+  task: Task
+  story: User Story
+  usecase: Use Case
+  cr: Change Request
+qa:
+  - Black-Blood
+maxChangesPerRun: 30
+historySize: 20
