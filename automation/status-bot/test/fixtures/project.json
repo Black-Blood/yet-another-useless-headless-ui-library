@@ -1,0 +1,24 @@
+{
+  "id": "PVT_1",
+  "field": {
+    "id": "PVTSSF_1",
+    "options": [
+      { "id": "opt-new", "name": "New" },
+      { "id": "opt-progress", "name": "In Progress" },
+      { "id": "opt-review", "name": "In Review" },
+      { "id": "opt-done", "name": "Done" },
+      { "id": "opt-canceled", "name": "Canceled" }
+    ]
+  },
+  "items": [
+    { "id": "PVTI_1", "content": { "number": 1, "repository":{"nameWithOwner":"Black-Blood/yet-another-useless-headless-ui-library"} },
+      "fieldValueByName": { "name": "In Progress", "updatedAt": "2026-11-06T00:00:00Z", "creator": { "login": "Black-Blood" } } },
+    { "id": "PVTI_2", "content": { "number": 2, "repository":{"nameWithOwner":"Black-Blood/yet-another-useless-headless-ui-library"} }, "fieldValueByName": null },
+    { "id": "PVTI_3", "content": { "number": 3, "repository":{"nameWithOwner":"Black-Blood/yet-another-useless-headless-ui-library"} },
+      "fieldValueByName": { "name": "New", "updatedAt": "2026-11-01T00:00:00Z", "creator": null } },
+    { "id": "PVTI_OTHER", "content": { "number": 4, "repository": { "nameWithOwner": "someone/else" } },
+      "fieldValueByName": { "name": "Done", "updatedAt": "2026-11-01T00:00:00Z", "creator": null } },
+    { "id": "PVTI_PR", "content": {},
+      "fieldValueByName": { "name": "New", "updatedAt": "2026-11-01T00:00:00Z", "creator": null } }
+  ]
+}
