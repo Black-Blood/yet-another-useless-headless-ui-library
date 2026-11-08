@@ -87,3 +87,13 @@ Deno.test('toFacts: bot card is found', () => {
 });
 
 Deno.test('toFacts: issues not in the project have itemId null', () => assertEquals(get(5).itemId, null));
+
+Deno.test('toFacts: merge commit SHA of merged PRs', () =>
+  assertEquals(
+    facts.pulls.map((p) => [p.number, p.mergeCommit]),
+    [
+      [10, null],
+      [11, 'abc1234def5678901234567890abcdef12345678'],
+      [12, null],
+    ],
+  ));

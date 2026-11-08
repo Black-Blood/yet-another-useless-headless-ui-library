@@ -79,6 +79,7 @@ export function toFacts(
     body: p.body,
     createdAt: p.createdAt,
     mergedAt: p.mergedAt,
+    mergeCommit: p.state === 'MERGED' ? (p.mergeCommit?.oid ?? null) : null,
     closingIssues: p.closingIssuesReferences.nodes.map((i) => i.number),
   }));
 

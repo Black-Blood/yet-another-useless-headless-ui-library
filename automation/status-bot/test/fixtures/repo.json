@@ -1,63 +1,295 @@
 {
   "issues": [
     {
-      "id": "I_1", "number": 1, "state": "OPEN", "stateReason": null, "createdAt": "2026-11-01T00:00:00Z",
-      "author": { "login": "Black-Blood" }, "authorAssociation": "OWNER",
-      "labels": { "nodes": [{ "name": "Task" }, { "name": "I need help" }] },
-      "assignees": { "nodes": [{ "login": "dev" }] },
-      "parent": { "number": 3 }, "subIssues": { "nodes": [] }, "blockedBy": { "nodes": [] },
-      "timelineItems": { "nodes": [] },
-      "comments": { "nodes": [
-        { "databaseId": 101, "createdAt": "2026-11-02T00:00:00Z", "body": "looks good", "author": { "login": "dev" } },
-        { "databaseId": 102, "createdAt": "2026-11-05T00:00:00Z", "author": { "login": "github-actions" },
-          "body": "🤖 Status: In Progress\n<!-- status-bot: {\"v\":1,\"status\":\"inProgress\",\"source\":\"bot\",\"epoch\":null,\"at\":\"2026-11-05T00:00:00Z\",\"verifyAssigned\":false,\"history\":[]} -->" }
-      ] }
+      "id": "I_1",
+      "number": 1,
+      "state": "OPEN",
+      "stateReason": null,
+      "createdAt": "2026-11-01T00:00:00Z",
+      "author": {
+        "login": "Black-Blood"
+      },
+      "authorAssociation": "OWNER",
+      "labels": {
+        "nodes": [
+          {
+            "name": "Task"
+          },
+          {
+            "name": "I need help"
+          }
+        ]
+      },
+      "assignees": {
+        "nodes": [
+          {
+            "login": "dev"
+          }
+        ]
+      },
+      "parent": {
+        "number": 3
+      },
+      "subIssues": {
+        "nodes": []
+      },
+      "blockedBy": {
+        "nodes": []
+      },
+      "timelineItems": {
+        "nodes": []
+      },
+      "comments": {
+        "nodes": [
+          {
+            "databaseId": 101,
+            "createdAt": "2026-11-02T00:00:00Z",
+            "body": "looks good",
+            "author": {
+              "login": "dev"
+            }
+          },
+          {
+            "databaseId": 102,
+            "createdAt": "2026-11-05T00:00:00Z",
+            "author": {
+              "login": "github-actions"
+            },
+            "body": "🤖 Status: In Progress\n<!-- status-bot: {\"v\":1,\"status\":\"inProgress\",\"source\":\"bot\",\"epoch\":null,\"at\":\"2026-11-05T00:00:00Z\",\"verifyAssigned\":false,\"history\":[]} -->"
+          }
+        ]
+      }
     },
     {
-      "id": "I_2", "number": 2, "state": "CLOSED", "stateReason": "DUPLICATE", "createdAt": "2026-11-01T00:00:00Z",
-      "author": { "login": "stranger" }, "authorAssociation": "NONE",
-      "labels": { "nodes": [{ "name": "Bug" }] }, "assignees": { "nodes": [] },
-      "parent": null, "subIssues": { "nodes": [] }, "blockedBy": { "nodes": [] },
-      "timelineItems": { "nodes": [{ "createdAt": "2026-11-07T00:00:00Z" }] },
-      "comments": { "nodes": [] }
+      "id": "I_2",
+      "number": 2,
+      "state": "CLOSED",
+      "stateReason": "DUPLICATE",
+      "createdAt": "2026-11-01T00:00:00Z",
+      "author": {
+        "login": "stranger"
+      },
+      "authorAssociation": "NONE",
+      "labels": {
+        "nodes": [
+          {
+            "name": "Bug"
+          }
+        ]
+      },
+      "assignees": {
+        "nodes": []
+      },
+      "parent": null,
+      "subIssues": {
+        "nodes": []
+      },
+      "blockedBy": {
+        "nodes": []
+      },
+      "timelineItems": {
+        "nodes": [
+          {
+            "createdAt": "2026-11-07T00:00:00Z"
+          }
+        ]
+      },
+      "comments": {
+        "nodes": []
+      }
     },
     {
-      "id": "I_3", "number": 3, "state": "OPEN", "stateReason": null, "createdAt": "2026-11-01T00:00:00Z",
-      "author": { "login": "Black-Blood" }, "authorAssociation": "OWNER",
-      "labels": { "nodes": [{ "name": "User Story" }] }, "assignees": { "nodes": [] },
-      "parent": null, "subIssues": { "nodes": [{ "number": 1 }] }, "blockedBy": { "nodes": [] },
-      "timelineItems": { "nodes": [] }, "comments": { "nodes": [] }
+      "id": "I_3",
+      "number": 3,
+      "state": "OPEN",
+      "stateReason": null,
+      "createdAt": "2026-11-01T00:00:00Z",
+      "author": {
+        "login": "Black-Blood"
+      },
+      "authorAssociation": "OWNER",
+      "labels": {
+        "nodes": [
+          {
+            "name": "User Story"
+          }
+        ]
+      },
+      "assignees": {
+        "nodes": []
+      },
+      "parent": null,
+      "subIssues": {
+        "nodes": [
+          {
+            "number": 1
+          }
+        ]
+      },
+      "blockedBy": {
+        "nodes": []
+      },
+      "timelineItems": {
+        "nodes": []
+      },
+      "comments": {
+        "nodes": []
+      }
     },
     {
-      "id": "I_4", "number": 4, "state": "OPEN", "stateReason": null, "createdAt": "2026-11-01T00:00:00Z",
-      "author": { "login": "Black-Blood" }, "authorAssociation": "COLLABORATOR",
-      "labels": { "nodes": [{ "name": "Task" }, { "name": "Bug" }] }, "assignees": { "nodes": [] },
-      "parent": null, "subIssues": { "nodes": [] }, "blockedBy": { "nodes": [] },
-      "timelineItems": { "nodes": [] }, "comments": { "nodes": [] }
+      "id": "I_4",
+      "number": 4,
+      "state": "OPEN",
+      "stateReason": null,
+      "createdAt": "2026-11-01T00:00:00Z",
+      "author": {
+        "login": "Black-Blood"
+      },
+      "authorAssociation": "COLLABORATOR",
+      "labels": {
+        "nodes": [
+          {
+            "name": "Task"
+          },
+          {
+            "name": "Bug"
+          }
+        ]
+      },
+      "assignees": {
+        "nodes": []
+      },
+      "parent": null,
+      "subIssues": {
+        "nodes": []
+      },
+      "blockedBy": {
+        "nodes": []
+      },
+      "timelineItems": {
+        "nodes": []
+      },
+      "comments": {
+        "nodes": []
+      }
     },
     {
-      "id": "I_5", "number": 5, "state": "OPEN", "stateReason": null, "createdAt": "2026-11-01T00:00:00Z",
-      "author": null, "authorAssociation": "NONE",
-      "labels": { "nodes": [] }, "assignees": { "nodes": [] },
-      "parent": null, "subIssues": { "nodes": [] }, "blockedBy": { "nodes": [{ "number": 3 }] },
-      "timelineItems": { "nodes": [] }, "comments": { "nodes": [] }
+      "id": "I_5",
+      "number": 5,
+      "state": "OPEN",
+      "stateReason": null,
+      "createdAt": "2026-11-01T00:00:00Z",
+      "author": null,
+      "authorAssociation": "NONE",
+      "labels": {
+        "nodes": []
+      },
+      "assignees": {
+        "nodes": []
+      },
+      "parent": null,
+      "subIssues": {
+        "nodes": []
+      },
+      "blockedBy": {
+        "nodes": [
+          {
+            "number": 3
+          }
+        ]
+      },
+      "timelineItems": {
+        "nodes": []
+      },
+      "comments": {
+        "nodes": []
+      }
     }
   ],
   "pulls": [
-    { "number": 10, "state": "OPEN", "isDraft": false, "baseRefName": "develop", "headRefName": "feature/1-a",
-      "body": "", "createdAt": "2026-11-03T00:00:00Z", "mergedAt": null,
-      "author": { "login": "dev" }, "authorAssociation": "COLLABORATOR", "closingIssuesReferences": { "nodes": [] } },
-    { "number": 11, "state": "MERGED", "isDraft": false, "baseRefName": "develop", "headRefName": "patch-1",
-      "body": "fixes it", "createdAt": "2026-11-01T00:00:00Z", "mergedAt": "2026-11-02T00:00:00Z",
-      "author": { "login": "stranger" }, "authorAssociation": "NONE", "closingIssuesReferences": { "nodes": [{ "number": 2 }] } },
-    { "number": 12, "state": "CLOSED", "isDraft": true, "baseRefName": "main", "headRefName": "feature/1-old",
-      "body": "", "createdAt": "2026-10-01T00:00:00Z", "mergedAt": null,
-      "author": null, "authorAssociation": "NONE", "closingIssuesReferences": { "nodes": [] } }
+    {
+      "number": 10,
+      "state": "OPEN",
+      "isDraft": false,
+      "baseRefName": "develop",
+      "headRefName": "feature/1-a",
+      "body": "",
+      "createdAt": "2026-11-03T00:00:00Z",
+      "mergedAt": null,
+      "author": {
+        "login": "dev"
+      },
+      "authorAssociation": "COLLABORATOR",
+      "closingIssuesReferences": {
+        "nodes": []
+      },
+      "mergeCommit": null
+    },
+    {
+      "number": 11,
+      "state": "MERGED",
+      "isDraft": false,
+      "baseRefName": "develop",
+      "headRefName": "patch-1",
+      "body": "fixes it",
+      "createdAt": "2026-11-01T00:00:00Z",
+      "mergedAt": "2026-11-02T00:00:00Z",
+      "author": {
+        "login": "stranger"
+      },
+      "authorAssociation": "NONE",
+      "closingIssuesReferences": {
+        "nodes": [
+          {
+            "number": 2
+          }
+        ]
+      },
+      "mergeCommit": {
+        "oid": "abc1234def5678901234567890abcdef12345678"
+      }
+    },
+    {
+      "number": 12,
+      "state": "CLOSED",
+      "isDraft": true,
+      "baseRefName": "main",
+      "headRefName": "feature/1-old",
+      "body": "",
+      "createdAt": "2026-10-01T00:00:00Z",
+      "mergedAt": null,
+      "author": null,
+      "authorAssociation": "NONE",
+      "closingIssuesReferences": {
+        "nodes": []
+      },
+      "mergeCommit": null
+    }
   ],
   "refs": [
-    { "name": "main", "target": { "committedDate": "2026-11-01T00:00:00Z" } },
-    { "name": "develop", "target": { "committedDate": "2026-11-02T00:00:00Z" } },
-    { "name": "feature/1-a", "target": { "committedDate": "2026-11-03T00:00:00Z" } },
-    { "name": "fix/2-b", "target": { "committedDate": "2026-11-04T00:00:00Z" } }
+    {
+      "name": "main",
+      "target": {
+        "committedDate": "2026-11-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "develop",
+      "target": {
+        "committedDate": "2026-11-02T00:00:00Z"
+      }
+    },
+    {
+      "name": "feature/1-a",
+      "target": {
+        "committedDate": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "name": "fix/2-b",
+      "target": {
+        "committedDate": "2026-11-04T00:00:00Z"
+      }
+    }
   ]
 }

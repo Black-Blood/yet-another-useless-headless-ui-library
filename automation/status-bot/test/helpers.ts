@@ -16,6 +16,7 @@ export function pull(p: Partial<PullFact> & { number: number }): PullFact {
     body: '',
     createdAt: '2026-11-01T00:00:00Z',
     mergedAt: null,
+    mergeCommit: null,
     closingIssues: [],
     ...p,
   };
