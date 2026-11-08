@@ -89,7 +89,7 @@ The bot ignores the `I need help` label.
   | `feat/<N>-<slug>` | a Task | links it to Task `N` |
   | `fix/<N>-<slug>` | a Bug | links it to Bug `N` |
   | `chore/<slug>` | other work: docs, refactoring, tooling | ignores it |
-  | `revert/<slug>`, `revert-<N>-…` | reverts (the second form is what GitHub's Revert button makes) | ignores the branch; reverts are recognized from the PR text |
+  | `revert-<N>-…` | reverts — the name GitHub's Revert button makes (it cannot be changed) | ignores the branch; reverts are recognized from the PR text |
 
   `N` is the issue number. If the prefix does not match the type of issue `N`, the
   branch is ignored with a warning in the card. A branch that names a User Story,
@@ -511,8 +511,11 @@ First a run with `dry-run: true`, then:
    closed, Item reopened, Pull request merged, Pull request linked to issue,
    Auto-close issue, Auto-add to project, Auto-archive).
 7. Ruleset `branch-names` (restrict creations, no bypass): new branches may only
-   be named `feat/**`, `fix/**`, `chore/**`, `revert/**` or `revert-*` (the
-   Revert button). GitHub's "Create a branch" dialog then requires the prefix.
+   be named `feat/…`, `fix/…`, `chore/…` or `revert-…` (the Revert button). In
+   ruleset patterns `*` does not cross `/`, so the excluded patterns are
+   `refs/heads/feat/**/*`, `refs/heads/fix/**/*`, `refs/heads/chore/**/*`,
+   `refs/heads/revert-*` and `refs/heads/revert-*/**/*` (e.g. `revert-4-feat/2-x`).
+   GitHub's "Create a branch" dialog then requires the prefix.
 8. Repository variable `STATUS_BOT_LIVE = true` — set it only after a dry run has
    been reviewed. Until then every run is a dry run, so
    merging the bot does not start writing.
