@@ -3,24 +3,18 @@ import assert from 'node:assert/strict';
 import { storyStatus } from '../src/rules/story.ts';
 import { usecaseStatus } from '../src/rules/usecase.ts';
 import { crStatus } from '../src/rules/cr.ts';
-import { marker } from './helpers.ts';
-
-const manualDone = marker({ status: 'done', source: 'manual' });
-
-test('storyStatus: no tasks → New', () => assert.equal(storyStatus([], [], null).status, 'new'));
+test('storyStatus: no tasks → New', () => assert.equal(storyStatus([], [], false).status, 'new'));
 test('storyStatus: some task in progress → In Progress', () =>
-  assert.equal(storyStatus(['done', 'inProgress'], [], null).status, 'inProgress'));
-test('storyStatus: all tasks New → New', () => assert.equal(storyStatus(['new', 'new'], [], null).status, 'new'));
-test('storyStatus: accepted manually, all done → Done', () =>
-  assert.equal(storyStatus(['done', 'done'], ['done'], manualDone).status, 'done'));
-test('storyStatus: open bug after manual Done → In Review', () =>
-  assert.equal(storyStatus(['done'], ['new'], manualDone).status, 'inReview'));
-test('storyStatus: all tasks done, no manual Done → In Review', () =>
-  assert.equal(storyStatus(['done'], [], null).status, 'inReview'));
+  assert.equal(storyStatus(['done', 'inProgress'], [], false).status, 'inProgress'));
+test('storyStatus: all tasks New → New', () => assert.equal(storyStatus(['new', 'new'], [], false).status, 'new'));
+test('storyStatus: accepted Done holds, all done → Done', () =>
+  assert.equal(storyStatus(['done', 'done'], ['done'], true).status, 'done'));
+test('storyStatus: open bug after accepted Done → In Review', () =>
+  assert.equal(storyStatus(['done'], ['new'], true).status, 'inReview'));
+test('storyStatus: all tasks done, no accepted Done → In Review', () =>
+  assert.equal(storyStatus(['done'], [], false).status, 'inReview'));
 test('storyStatus: a new task next to done ones → In Progress', () =>
-  assert.equal(storyStatus(['done', 'new'], [], null).status, 'inProgress'));
-test('storyStatus: Done set by the bot is not a manual Done', () =>
-  assert.equal(storyStatus(['done'], [], marker({ status: 'done', source: 'bot' })).status, 'inReview'));
+  assert.equal(storyStatus(['done', 'new'], [], false).status, 'inProgress'));
 
 test('usecaseStatus: no stories → New', () => assert.equal(usecaseStatus([]).status, 'new'));
 test('usecaseStatus: all stories done → Done', () => assert.equal(usecaseStatus(['done', 'done']).status, 'done'));

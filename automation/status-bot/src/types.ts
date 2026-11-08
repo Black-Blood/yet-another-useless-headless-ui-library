@@ -22,6 +22,8 @@ export interface Marker {
   status: Status;
   source: 'bot' | 'manual';
   epoch: string | null;
+  /** the last accepted manual status (§4.1, §4.4) */
+  held: Status | null;
   at: string;
   verifyAssigned: boolean;
   history: HistoryEntry[];

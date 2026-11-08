@@ -125,6 +125,7 @@ The history keeps the last 20 entries.
 | `status` | the status the bot last wrote or accepted as a manual change |
 | `source` | `bot` — computed by the bot; `manual` — an accepted manual change |
 | `epoch` | ISO time of the last accepted manual change, or `null` |
+| `held` | the last accepted manual status, or `null` (§4.1, §4.4) |
 | `at` | ISO time the card was last written |
 | `verifyAssigned` | Bug only: QA has already been assigned for the current verification |
 
@@ -143,9 +144,14 @@ there are several such comments, the newest one is used and the rest are ignored
   - merged PRs count only if `mergedAt > epoch`;
   - branches count only if their last commit date is `> epoch`;
   - open PRs always count — they are the current state.
-- **A manual status holds until something happens (Task and Bug only):** if
-  `source = manual` and computing from the facts after `epoch` yields New, the
-  manual status is kept.
+- **An accepted manual status holds until something real happens (Task and Bug
+  only):** if `held` is set and computing from the facts after `epoch` yields New,
+  the status is `held`. A PR that was opened and closed without merging therefore
+  does not undo an accepted status, even if the bot changed the status while the
+  PR was open.
+- **Outsiders cannot disturb finished work:** for a Task or Bug whose status is
+  Done, open PRs by non-members (`authorAssociation` not in `OWNER`, `MEMBER`,
+  `COLLABORATOR`) are ignored. Merged PRs always count.
 - Rule tables are evaluated top to bottom; the first row whose condition holds wins.
 
 ### 4.2 Task
@@ -188,8 +194,13 @@ Children — active Tasks and Bugs.
 | 1 | no Tasks at all | New |
 | 2 | some Task is not Done, and at least one Task is not New | In Progress |
 | 3 | all Tasks are New | New |
-| 4 | all Tasks Done, marker `status = Done` and `source = manual`, all Bugs Done | Done |
+| 4 | all Tasks Done, all Bugs Done, and the accepted Done still holds | Done |
 | 5 | all Tasks Done | In Review |
+
+**The accepted Done still holds** when `held = Done` and, since `epoch`, no child
+Task or Bug was created and no PR of a child was merged into `develop`. A new bug,
+a new task or newly merged code needs a new manual Done; PRs that were opened and
+closed without merging do not.
 
 ### 4.5 Use Case
 
@@ -252,7 +263,7 @@ table in §4.7.
 | Change Request | → Canceled | the CR is New **or** all linked User Stories / Use Cases are Canceled | |
 
 For an accepted change: `status := new value`, `source := manual`,
-`epoch := time of the change`. History entry: "changed manually".
+`epoch := time of the change`, `held := new value`. History entry: "changed manually".
 
 Any other manual change is **reverted**: the bot restores `marker.status` and the
 issue state, and the card says what was reverted and why (for Canceled — the list

@@ -26,6 +26,19 @@ test('parseMarker: round-trips renderCard', () => assert.deepEqual(parseMarker(b
 
 test('parseMarker: malformed JSON gives null', () => assert.equal(parseMarker('<!-- status-bot: {oops -->'), null));
 
+test('parseMarker: a card written before `held` existed reads held as null', () =>
+  assert.equal(
+    parseMarker(
+      '<!-- status-bot: {"v":1,"status":"done","source":"manual","epoch":null,"at":"2026-11-05T00:00:00Z","verifyAssigned":false,"history":[]} -->',
+    )?.held,
+    null,
+  ));
+
+test('parseMarker: held round-trips', () => {
+  const held = marker({ status: 'inReview', held: 'done' });
+  assert.equal(parseMarker(renderCard(held, 'x', [], testConfig.statuses))?.held, 'done');
+});
+
 test('isBotLogin: GraphQL and REST spellings', () => {
   assert.ok(isBotLogin('github-actions'));
   assert.ok(isBotLogin('github-actions[bot]'));

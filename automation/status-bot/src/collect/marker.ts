@@ -33,6 +33,7 @@ export function parseMarker(body: string): Marker | null {
     isStatus(m.status) &&
     (m.source === 'bot' || m.source === 'manual') &&
     (m.epoch === null || isTime(m.epoch)) &&
+    (m.held === undefined || m.held === null || isStatus(m.held)) &&
     isTime(m.at) &&
     typeof m.verifyAssigned === 'boolean' &&
     Array.isArray(m.history) &&
@@ -43,6 +44,8 @@ export function parseMarker(body: string): Marker | null {
     status: m.status as Status,
     source: m.source as Marker['source'],
     epoch: m.epoch as string | null,
+    // cards written before `held` existed read it as null
+    held: (m.held ?? null) as Status | null,
     at: m.at as string,
     verifyAssigned: m.verifyAssigned as boolean,
     history: m.history as HistoryEntry[],

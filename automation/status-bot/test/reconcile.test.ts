@@ -110,16 +110,16 @@ test('reconcile: story flow', () => {
     carded(10, status, { type: 'story', children }, m);
 
   assert.equal(one(facts([task, story('inProgress')], pulls), 10).status, 'inReview');
-  assert.equal(one(facts([task, story('done', { source: 'manual' })], pulls), 10).status, 'done');
+  assert.equal(one(facts([task, story('done', { source: 'manual', held: 'done', epoch: AT })], pulls), 10).status, 'done');
   const bug = issue({ number: 49, type: 'bug', parent: 10 });
-  assert.equal(one(facts([task, bug, story('done', { source: 'manual' }, [46, 49])], pulls), 10).status, 'inReview');
+  assert.equal(one(facts([task, bug, story('done', { source: 'manual', held: 'done', epoch: AT }, [46, 49])], pulls), 10).status, 'inReview');
 });
 
 test('reconcile: use case closes in the same run as its last story', () => {
   const f = facts(
     [
       issue({ number: 46, parent: 10 }),
-      carded(10, 'done', { type: 'story', children: [46], parent: 5 }, { source: 'manual' }),
+      carded(10, 'done', { type: 'story', children: [46], parent: 5 }, { source: 'manual', held: 'done', epoch: AT }),
       carded(5, 'inProgress', { type: 'usecase', children: [10] }),
     ],
     [mergedPr(52, 'feature/46-x')],
@@ -131,7 +131,7 @@ test('reconcile: change request follows blocked-by stories', () => {
   const f = facts(
     [
       issue({ number: 46, parent: 10 }),
-      carded(10, 'done', { type: 'story', children: [46] }, { source: 'manual' }),
+      carded(10, 'done', { type: 'story', children: [46] }, { source: 'manual', held: 'done', epoch: AT }),
       carded(7, 'inProgress', { type: 'cr', blockedBy: [10] }),
     ],
     [mergedPr(52, 'feature/46-x')],
@@ -141,6 +141,58 @@ test('reconcile: change request follows blocked-by stories', () => {
 
 test('reconcile: canceled is sticky', () =>
   assert.equal(one(facts([carded(46, 'canceled')], [], [branch('feature/46-x')]), 46).status, 'canceled'));
+
+
+
+test('reconcile: an unmerged PR no longer undoes an accepted bug Done', () => {
+  const accepted = { held: 'done' as const, source: 'manual' as const, epoch: AT };
+  const bug = (m: Partial<Marker>, status: Status) => carded(49, status, { type: 'bug' }, m);
+  const prOpen = pull({ number: 70, headRef: 'fix/49-again', createdAt: LATER });
+  const afterOpen = one(facts([bug(accepted, 'done')], [prOpen]), 49);
+  assert.equal(afterOpen.status, 'inReview');
+  const closed = { ...prOpen, state: 'closed' as const };
+  assert.equal(one(facts([bug(afterOpen.marker, 'inReview')], [closed]), 49).status, 'done');
+});
+
+test('reconcile: outsider PRs do not touch a Done task', () => {
+  const fork = pull({ number: 71, headRef: 'patch-1', closingIssues: [46], author: 'stranger', authorIsMember: false });
+  const d = one(facts([carded(46, 'done')], [mergedPr(52, 'feature/46-x'), fork]), 46);
+  assert.equal(d.status, 'done');
+});
+
+test('reconcile: member PRs still reopen a Done task', () => {
+  const pr = pull({ number: 72, headRef: 'feature/46-more' });
+  assert.equal(one(facts([carded(46, 'done')], [mergedPr(52, 'feature/46-x'), pr]), 46).status, 'inReview');
+});
+
+test('reconcile: an accepted story Done survives a task PR opened and closed', () => {
+  const task = (status: Status) => carded(46, status, { parent: 10 });
+  const merged = mergedPr(52, 'feature/46-x');
+  const prOpen = pull({ number: 73, headRef: 'feature/46-more', createdAt: LATER });
+  const story = (m: Partial<Marker>, status: Status) => carded(10, status, { type: 'story', children: [46] }, m);
+  const first = one(facts([task('done'), story({ held: 'done', source: 'manual', epoch: AT }, 'done')], [merged, prOpen]), 10);
+  assert.equal(first.status, 'inProgress');
+  const closed = { ...prOpen, state: 'closed' as const };
+  assert.equal(one(facts([task('done'), story(first.marker, 'inProgress')], [merged, closed]), 10).status, 'done');
+});
+
+test('reconcile: a bug created after the story was accepted needs a new manual Done', () => {
+  const f = facts([
+    carded(46, 'done', { parent: 10 }),
+    // QA already accepted this bug as Done, so the bug itself stays Done
+    carded(49, 'done', { type: 'bug', parent: 10, createdAt: LATER }, { held: 'done', source: 'manual', epoch: LATER }),
+    carded(10, 'done', { type: 'story', children: [46, 49] }, { held: 'done', source: 'manual', epoch: AT }),
+  ], [mergedPr(52, 'feature/46-x')]);
+  assert.equal(one(f, 10).status, 'inReview');
+});
+
+test('reconcile: code merged into a child after acceptance needs a new manual Done', () => {
+  const f = facts([
+    carded(46, 'done', { parent: 10 }),
+    carded(10, 'done', { type: 'story', children: [46] }, { held: 'done', source: 'manual', epoch: AT }),
+  ], [mergedPr(52, 'feature/46-x', { mergedAt: LATER })]);
+  assert.equal(one(f, 10).status, 'inReview');
+});
 
 test('reconcile: cancel guard ignores code of blockers that are not stories or use cases', () => {
   const f = facts(

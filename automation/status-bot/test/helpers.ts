@@ -32,6 +32,7 @@ export function marker(p: Partial<Marker> = {}): Marker {
     status: 'new',
     source: 'bot',
     epoch: null,
+    held: null,
     at: '2026-11-01T00:00:00Z',
     verifyAssigned: false,
     history: [],

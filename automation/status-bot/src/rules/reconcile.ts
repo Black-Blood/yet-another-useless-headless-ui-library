@@ -28,8 +28,18 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
   const results = new Map<number, Desired>();
   const get = (n: number) => facts.issues.get(n);
 
-  const workOf = (i: IssueFacts, epoch: string | null) =>
-    collectWork(i.number, i.type === 'bug' ? 'bug' : 'task', facts, active, config, epoch);
+  // §4.1 — for finished work, open PRs by non-members are ignored.
+  const memberFacts: Facts = { ...facts, pulls: facts.pulls.filter((p) => p.state !== 'open' || p.authorIsMember) };
+  const workOf = (i: IssueFacts, epoch: string | null, membersOnly = false) =>
+    collectWork(i.number, i.type === 'bug' ? 'bug' : 'task', membersOnly ? memberFacts : facts, active, config, epoch);
+
+  // §4.4 — a new child or newly merged child code since `epoch` ends an accepted story Done.
+  const realChangeSince = (story: IssueFacts, epoch: string) =>
+    story.children.some((c) => {
+      const child = get(c);
+      if (!child || (child.type !== 'task' && child.type !== 'bug')) return false;
+      return Date.parse(child.createdAt) > Date.parse(epoch) || workOf(child, epoch).activeMerged.length > 0;
+    });
 
   // Active merged PRs in an issue's subtree, for the Canceled guard (§5.3).
   const codeMemo = new Map<number, number[]>();
@@ -92,6 +102,7 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
         status: issue.projectStatus ?? 'new',
         source: 'bot',
         epoch: null,
+        held: null,
         at: now,
         verifyAssigned: false,
         history: [],
@@ -112,6 +123,7 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
     let status: Status | null = m0?.status ?? null;
     let source: Marker['source'] = m0?.source ?? 'bot';
     let epoch = m0?.epoch ?? null;
+    let held = m0?.held ?? null;
     let verifyAssigned = m0?.verifyAssigned ?? false;
     let history: HistoryEntry[] = m0?.history ?? [];
     let assignees: string[] | null = null;
@@ -152,6 +164,7 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
         status = change.to;
         source = 'manual';
         epoch = change.at;
+        held = change.to;
       } else {
         record({ at: now, from: change.to, to: from, reason: `reverted manual change to ${names[change.to]}: ${verdict.reason}` });
       }
@@ -167,20 +180,20 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
         if (open.length > 0) warnings.push(`Children not canceled: ${open.map((k) => `#${k.number}`).join(', ')}`);
       }
     } else if (type === 'task' || type === 'bug') {
-      const work = workOf(issue, epoch);
+      const work = workOf(issue, epoch, status === 'done');
       warnings.push(...work.warnings);
       if (type === 'task') decision = taskStatus(work);
       else ({ verification, ...decision } = bugStatus(work));
-      if (source === 'manual' && decision.status === 'new' && status !== null) {
-        decision = { status, reason: 'kept manual status — nothing changed since' };
+      if (held !== null && held !== 'canceled' && decision.status === 'new') {
+        decision = { status: held, reason: 'accepted manual status still holds — nothing active since' };
       }
     } else if (type === 'story') {
       const kids = childStatuses(issue.children, ['task', 'bug'], warnings).filter((k) => k.status !== 'canceled');
-      const current = status ? ({ status, source } as Marker) : null;
+      const acceptedDone = held === 'done' && epoch !== null && !realChangeSince(issue, epoch);
       decision = storyStatus(
         statuses(kids.filter((k) => k.type === 'task')),
         statuses(kids.filter((k) => k.type === 'bug')),
-        current,
+        acceptedDone,
       );
     } else if (type === 'usecase') {
       decision = usecaseStatus(activeOnly(statuses(childStatuses(issue.children, ['story'], warnings))));
@@ -209,6 +222,7 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
       m0.status !== decision.status ||
       m0.source !== source ||
       m0.epoch !== epoch ||
+      m0.held !== held ||
       m0.verifyAssigned !== verifyAssigned ||
       m0.history !== history;
     const marker: Marker = {
@@ -216,6 +230,7 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
       status: decision.status,
       source,
       epoch,
+      held,
       at: changed ? now : m0!.at,
       verifyAssigned,
       history,
