@@ -7,6 +7,10 @@ on:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
+  # Safety net for changes GitHub sends no event for (Project status drags, sub-issues, "Blocked by").
+  # Hourly at :17 — the top of the hour is when GitHub delays scheduled runs the most.
+  schedule:
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       dry-run:

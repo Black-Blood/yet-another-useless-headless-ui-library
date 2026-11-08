@@ -9,6 +9,19 @@ export function planAdditions(facts: Facts): Action[] {
     .map((i) => ({ kind: 'addToProject', issue: i.number, nodeId: i.nodeId }));
 }
 
+/**
+ * §6.2 — puts just-added issues into the facts with their new item ids, so they are reconciled in the same
+ * run. (Re-reading the Project right after adding can miss the new items: GitHub lists them with a delay.)
+ */
+export function withAddedItems(facts: Facts, added: { issue: number; itemId: string }[]): Facts {
+  const issues = new Map(facts.issues);
+  for (const { issue, itemId } of added) {
+    const current = issues.get(issue);
+    if (current) issues.set(issue, { ...current, itemId, projectStatus: null, projectStatusUpdatedAt: null, projectStatusUpdatedBy: null });
+  }
+  return { ...facts, issues };
+}
+
 const sameState = (a: IssueState, b: IssueState) =>
   a.open === b.open && (a.open || (a.reason ?? 'completed') === (b.reason ?? 'completed'));
 const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));

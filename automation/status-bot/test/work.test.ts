@@ -64,3 +64,20 @@ Deno.test('collectWork: epoch filters merged PRs and stale branches, not open PR
 
 Deno.test('collectWork: draft PRs are listed separately', () =>
   assertEquals(run([pull({ number: 58, headRef: 'feature/46-x', draft: true })]).openDraft, [58]));
+
+Deno.test('collectWork: reverted PRs are listed', () => {
+  const sha = '6766a7bf75d3f03ec01672e15afe9cac1fd3f7fd';
+  const w = run([
+    pull({ number: 4, headRef: 'feature/46-x', state: 'merged', mergedAt: '2026-11-02T00:00:00Z', mergeCommit: sha }),
+    pull({ number: 5, headRef: 'revert-4-feature/46-x', state: 'merged', mergedAt: '2026-11-03T00:00:00Z', body: `This reverts commit ${sha}.` }),
+  ]);
+  assertEquals(w.reverted, [4]);
+  assertEquals(w.allActiveMerged, []);
+});
+
+Deno.test('collectWork: a branch without a prefix counts for tasks and bugs', () => {
+  const w = run([pull({ number: 63, headRef: '46-from-button' })], [branch('46-from-button')]);
+  assertEquals(w.branches, ['46-from-button']);
+  assertEquals(w.openReady, [63]);
+  assertEquals(w.warnings, []);
+});

@@ -11,6 +11,8 @@ export interface Work {
   allActiveMerged: number[];
   /** matching branches, after the epoch filter */
   branches: string[];
+  /** PRs that were merged and later reverted (only used to explain the status) */
+  reverted: number[];
   warnings: string[];
 }
 
@@ -33,10 +35,18 @@ export function collectWork(
     const parsed = parseBranch(headRef, config.branchPrefix);
     if (!parsed) return closingIssues.includes(issue) ? 'yes' : 'no';
     if (parsed.number !== issue) return 'no';
-    return parsed.kind === kind ? 'yes' : 'mismatch';
+    return parsed.kind === null || parsed.kind === kind ? 'yes' : 'mismatch';
   };
 
-  const work: Work = { openReady: [], openDraft: [], activeMerged: [], allActiveMerged: [], branches: [], warnings: [] };
+  const work: Work = {
+    openReady: [],
+    openDraft: [],
+    activeMerged: [],
+    allActiveMerged: [],
+    branches: [],
+    reverted: [],
+    warnings: [],
+  };
   for (const p of [...facts.pulls].sort((a, b) => a.number - b.number)) {
     const linked = link(p.headRef, p.closingIssues);
     if (linked === 'no') continue;
@@ -57,13 +67,15 @@ export function collectWork(
     } else if (p.state === 'merged' && active.has(p.number)) {
       work.allActiveMerged.push(p.number);
       if (p.mergedAt !== null && after(p.mergedAt)) work.activeMerged.push(p);
+    } else if (p.state === 'merged') {
+      work.reverted.push(p.number);
     }
   }
 
   for (const b of facts.branches) {
     const parsed = parseBranch(b.name, config.branchPrefix);
     if (!parsed || parsed.number !== issue) continue;
-    if (parsed.kind !== kind) mismatch(b.name);
+    if (parsed.kind !== null && parsed.kind !== kind) mismatch(b.name);
     else if (after(b.lastCommitAt)) work.branches.push(b.name);
   }
 

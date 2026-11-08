@@ -1,6 +1,7 @@
 import { STATUSES, ISSUE_TYPES } from '../types.ts';
 import type { Config, Facts, IssueFacts, IssueState, IssueType, ProjectMeta, PullFact, Status } from '../types.ts';
 import type { RawIssue, RawProject, RawRepo } from './github.ts';
+import { parseBranch } from './branch-name.ts';
 import { findCard } from './marker.ts';
 
 const MEMBER = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
@@ -83,9 +84,8 @@ export function toFacts(
     closingIssues: p.closingIssuesReferences.nodes.map((i) => i.number),
   }));
 
-  const prefixes = [`${config.branchPrefix.task}/`, `${config.branchPrefix.bug}/`];
   const branches = raw.repo.refs
-    .filter((r) => prefixes.some((p) => r.name.startsWith(p)))
+    .filter((r) => parseBranch(r.name, config.branchPrefix) !== null)
     .map((r) => ({ name: r.name, lastCommitAt: r.target?.committedDate ?? '1970-01-01T00:00:00Z' }));
 
   return { facts: { now, repo, issues, pulls, branches }, meta };

@@ -6,7 +6,12 @@ export interface Clients {
   /** REST with GITHUB_TOKEN */
   rest: { request: (route: string, params: Record<string, unknown>) => Promise<unknown> };
 }
-export interface RunResult { done: Action[]; errors: { action: Action; message: string }[] }
+export interface RunResult {
+  done: Action[];
+  errors: { action: Action; message: string }[];
+  /** item ids of issues added to the Project in this run (placeholders in a dry run) */
+  added: { issue: number; itemId: string }[];
+}
 
 const ADD_ITEM = `mutation($projectId: ID!, $contentId: ID!) {
   addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } }
@@ -17,12 +22,24 @@ const SET_STATUS = `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $opti
   ) { projectV2Item { id } }
 }`;
 
-async function run(action: Action, clients: Clients, meta: ProjectMeta, owner: string, repo: string): Promise<void> {
+/** Runs one action; for addToProject, returns the new item's id. */
+async function run(
+  action: Action,
+  clients: Clients,
+  meta: ProjectMeta,
+  owner: string,
+  repo: string,
+): Promise<string | void> {
   const base = { owner, repo };
   switch (action.kind) {
-    case 'addToProject':
-      await clients.projectGql(ADD_ITEM, { projectId: meta.projectId, contentId: action.nodeId });
-      return;
+    case 'addToProject': {
+      const res = (await clients.projectGql(ADD_ITEM, { projectId: meta.projectId, contentId: action.nodeId })) as {
+        addProjectV2ItemById?: { item?: { id?: string } };
+      };
+      const id = res.addProjectV2ItemById?.item?.id;
+      if (!id) throw new Error(`addProjectV2ItemById returned no item id for #${action.issue}`);
+      return id;
+    }
     case 'setStatus':
       await clients.projectGql(SET_STATUS, {
         projectId: meta.projectId,
@@ -73,14 +90,18 @@ export async function execute(
   repo: string,
   dryRun: boolean,
 ): Promise<RunResult> {
-  if (dryRun) return { done: [...actions], errors: [] };
+  if (dryRun) {
+    const added = actions.filter((a) => a.kind === 'addToProject').map((a) => ({ issue: a.issue, itemId: `dry-run:${a.issue}` }));
+    return { done: [...actions], errors: [], added };
+  }
   const [owner, name] = repo.split('/');
-  const result: RunResult = { done: [], errors: [] };
+  const result: RunResult = { done: [], errors: [], added: [] };
   const failed = new Set<number>();
   for (const action of actions) {
     if (failed.has(action.issue)) continue;
     try {
-      await run(action, clients, meta, owner, name);
+      const itemId = await run(action, clients, meta, owner, name);
+      if (action.kind === 'addToProject' && itemId) result.added.push({ issue: action.issue, itemId });
       result.done.push(action);
     } catch (error) {
       failed.add(action.issue);

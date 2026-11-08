@@ -290,6 +290,18 @@
       "target": {
         "committedDate": "2026-11-04T00:00:00Z"
       }
+    },
+    {
+      "name": "3-from-button",
+      "target": {
+        "committedDate": "2026-11-05T00:00:00Z"
+      }
+    },
+    {
+      "name": "chore/3-other",
+      "target": {
+        "committedDate": "2026-11-05T00:00:00Z"
+      }
     }
   ]
 }

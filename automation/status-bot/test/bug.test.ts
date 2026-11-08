@@ -9,6 +9,7 @@ const work = (w: Partial<Work>): Work => ({
   activeMerged: [],
   allActiveMerged: [],
   branches: [],
+  reverted: [],
   warnings: [],
   ...w,
 });
