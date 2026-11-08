@@ -10,19 +10,19 @@ const run = (pulls: PullFact[], branches: BranchFact[] = [], epoch: string | nul
 };
 
 Deno.test('collectWork: links PRs and branches by name', () => {
-  const w = run([pull({ number: 52, headRef: 'feature/46-x' })], [branch('feature/46-x')]);
+  const w = run([pull({ number: 52, headRef: 'feat/46-x' })], [branch('feat/46-x')]);
   assertEquals(w.openReady, [52]);
-  assertEquals(w.branches, ['feature/46-x']);
+  assertEquals(w.branches, ['feat/46-x']);
 });
 
 Deno.test('collectWork: Development link is a fallback for unparseable branches', () =>
   assertEquals(run([pull({ number: 53, headRef: 'patch-1', closingIssues: [46] })]).openReady, [53]));
 
 Deno.test('collectWork: branch name wins over Development link', () =>
-  assertEquals(run([pull({ number: 54, headRef: 'feature/47-x', closingIssues: [46] })]).openReady, []));
+  assertEquals(run([pull({ number: 54, headRef: 'feat/47-x', closingIssues: [46] })]).openReady, []));
 
 Deno.test('collectWork: PR into another base is ignored with a warning', () => {
-  const w = run([pull({ number: 55, headRef: 'feature/46-x', baseRef: 'main' })]);
+  const w = run([pull({ number: 55, headRef: 'feat/46-x', baseRef: 'main' })]);
   assertEquals(w.openReady, []);
   assertMatch(w.warnings[0], /PR #55 targets main, not develop — ignored/);
 });
@@ -50,10 +50,10 @@ Deno.test('collectWork: fork branch names in warnings are code, not markup', () 
 Deno.test('collectWork: epoch filters merged PRs and stale branches, not open PRs', () => {
   const w = run(
     [
-      pull({ number: 56, headRef: 'feature/46-a', state: 'merged', mergedAt: '2026-11-02T00:00:00Z' }),
-      pull({ number: 57, headRef: 'feature/46-b', createdAt: '2026-11-02T00:00:00Z' }),
+      pull({ number: 56, headRef: 'feat/46-a', state: 'merged', mergedAt: '2026-11-02T00:00:00Z' }),
+      pull({ number: 57, headRef: 'feat/46-b', createdAt: '2026-11-02T00:00:00Z' }),
     ],
-    [branch('feature/46-c', '2026-11-02T00:00:00Z')],
+    [branch('feat/46-c', '2026-11-02T00:00:00Z')],
     '2026-11-05T00:00:00Z',
   );
   assertEquals(w.activeMerged, []);
@@ -63,13 +63,13 @@ Deno.test('collectWork: epoch filters merged PRs and stale branches, not open PR
 });
 
 Deno.test('collectWork: draft PRs are listed separately', () =>
-  assertEquals(run([pull({ number: 58, headRef: 'feature/46-x', draft: true })]).openDraft, [58]));
+  assertEquals(run([pull({ number: 58, headRef: 'feat/46-x', draft: true })]).openDraft, [58]));
 
 Deno.test('collectWork: reverted PRs are listed', () => {
   const sha = '6766a7bf75d3f03ec01672e15afe9cac1fd3f7fd';
   const w = run([
-    pull({ number: 4, headRef: 'feature/46-x', state: 'merged', mergedAt: '2026-11-02T00:00:00Z', mergeCommit: sha }),
-    pull({ number: 5, headRef: 'revert-4-feature/46-x', state: 'merged', mergedAt: '2026-11-03T00:00:00Z', body: `This reverts commit ${sha}.` }),
+    pull({ number: 4, headRef: 'feat/46-x', state: 'merged', mergedAt: '2026-11-02T00:00:00Z', mergeCommit: sha }),
+    pull({ number: 5, headRef: 'revert-4-feat/46-x', state: 'merged', mergedAt: '2026-11-03T00:00:00Z', body: `This reverts commit ${sha}.` }),
   ]);
   assertEquals(w.reverted, [4]);
   assertEquals(w.allActiveMerged, []);

@@ -16,6 +16,12 @@ export interface Work {
   warnings: string[];
 }
 
+/** Names of branches (and open PR head branches) that name `issue`, whatever their prefix. */
+export function branchesNaming(issue: number, facts: Facts, config: Config): string[] {
+  const names = [...facts.branches.map((b) => b.name), ...facts.pulls.filter((p) => p.state === 'open').map((p) => p.headRef)];
+  return [...new Set(names.filter((name) => parseBranch(name, config.branchPrefix)?.number === issue))].sort();
+}
+
 /** Branches and PRs that belong to a task or bug (§3.4), with the epoch filter of §4.1. */
 export function collectWork(
   issue: number,

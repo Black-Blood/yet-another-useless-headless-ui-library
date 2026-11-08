@@ -82,11 +82,22 @@ The bot ignores the `I need help` label.
 ### 3.4 Branches and PRs
 
 - **Integration branch:** `develop` (also the default branch).
-- **Branch names:** `feature/<N>-<slug>` for a Task, `fix/<N>-<slug>` for a Bug,
-  where `N` is the issue number. If the prefix does not match the type of issue
-  `N`, the branch is ignored with a warning in the card. A branch `<N>-<slug>`
-  without a prefix (what GitHub's "Create a branch" button makes) counts for issue
-  `N` whether it is a Task or a Bug.
+- **Branch names** follow Conventional Branch:
+
+  | Prefix | Used for | Bot |
+  |---|---|---|
+  | `feat/<N>-<slug>` | a Task | links it to Task `N` |
+  | `fix/<N>-<slug>` | a Bug | links it to Bug `N` |
+  | `chore/<slug>` | other work: docs, refactoring, tooling | ignores it |
+  | `revert/<slug>`, `revert-<N>-…` | reverts (the second form is what GitHub's Revert button makes) | ignores the branch; reverts are recognized from the PR text |
+
+  `N` is the issue number. If the prefix does not match the type of issue `N`, the
+  branch is ignored with a warning in the card. A branch that names a User Story,
+  Use Case or Change Request is ignored with a warning on that issue's card — only
+  tasks and bugs get branches. A branch `<N>-<slug>` without a prefix (the default
+  name of GitHub's "Create a branch" button) is still accepted for a Task or Bug,
+  although the branch-name ruleset (§9) normally prevents creating it.
+- **Releases** are marked with tags (`vX.Y.Z`) on `main`, not with branches.
 - **Linking a PR to an issue:**
   1. by head branch name (same pattern, including PRs from forks);
   2. fallback — a PR linked to the issue through the **Development** sidebar
@@ -113,7 +124,7 @@ In every processed issue the bot keeps **one** comment authored by
 🤖 Status: In Review
 Reason: PR #52 opened (not draft)
 
-⚠️ Branch feature/49-modal does not match the type of issue #49 (Bug) — ignored
+⚠️ Branch `feat/49-modal` does not match the type of issue #49 (bug) — ignored
 
 History
 | When        | From        | To          | Reason                          |
@@ -169,7 +180,7 @@ there are several such comments, the newest one is used and the rest are ignored
 | 1 | there is an open PR (not draft) | In Review |
 | 2 | there is an open draft PR | In Progress |
 | 3 | there is an active merged PR | Done |
-| 4 | there is a branch `feature/N-…` | In Progress |
+| 4 | there is a branch `feat/N-…` | In Progress |
 | 5 | otherwise | New |
 
 ### 4.3 Bug
@@ -394,7 +405,7 @@ statuses:
   canceled: Canceled
 integrationBranch: develop
 branchPrefix:
-  task: feature
+  task: feat
   bug: fix
 typeLabels:
   bug: Bug
@@ -469,7 +480,7 @@ First a run with `dry-run: true`, then:
 
 1. A member creates an issue labeled `Task` → it appears in the Project as New,
    with a card.
-2. Branch `feature/N-x` → In Progress; draft PR → In Progress; Ready for review →
+2. Branch `feat/N-x` → In Progress; draft PR → In Progress; Ready for review →
    In Review; merge → Done, issue closed.
 3. Bug: `fix/N-x` → PR → merge → In Review, assignee is QA. QA sets New →
    assignee is the developer; new branch → In Progress → … → In Review; QA sets
@@ -499,7 +510,10 @@ First a run with `dry-run: true`, then:
 6. Project #4 → Workflows: disable all built-in workflows (Item added, Item
    closed, Item reopened, Pull request merged, Pull request linked to issue,
    Auto-close issue, Auto-add to project, Auto-archive).
-7. Repository variable `STATUS_BOT_LIVE = true` — set it only after a dry run has
+7. Ruleset `branch-names` (restrict creations, no bypass): new branches may only
+   be named `feat/**`, `fix/**`, `chore/**`, `revert/**` or `revert-*` (the
+   Revert button). GitHub's "Create a branch" dialog then requires the prefix.
+8. Repository variable `STATUS_BOT_LIVE = true` — set it only after a dry run has
    been reviewed. Until then every run is a dry run, so
    merging the bot does not start writing.
 

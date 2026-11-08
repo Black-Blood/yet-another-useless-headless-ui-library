@@ -212,7 +212,7 @@
       "state": "OPEN",
       "isDraft": false,
       "baseRefName": "develop",
-      "headRefName": "feature/1-a",
+      "headRefName": "feat/1-a",
       "body": "",
       "createdAt": "2026-11-03T00:00:00Z",
       "mergedAt": null,
@@ -254,7 +254,7 @@
       "state": "CLOSED",
       "isDraft": true,
       "baseRefName": "main",
-      "headRefName": "feature/1-old",
+      "headRefName": "feat/1-old",
       "body": "",
       "createdAt": "2026-10-01T00:00:00Z",
       "mergedAt": null,
@@ -280,7 +280,7 @@
       }
     },
     {
-      "name": "feature/1-a",
+      "name": "feat/1-a",
       "target": {
         "committedDate": "2026-11-03T00:00:00Z"
       }

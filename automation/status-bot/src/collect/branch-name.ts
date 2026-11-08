@@ -3,7 +3,7 @@ import type { Config } from '../types.ts';
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * `feature/46-login-form` → { kind: 'task', number: 46 }; `fix/49-modal` → { kind: 'bug', number: 49 };
+ * `feat/46-login-form` → { kind: 'task', number: 46 }; `fix/49-modal` → { kind: 'bug', number: 49 };
  * `46-login-form` (GitHub's "Create a branch" button) → { kind: null, number: 46 }, valid for a task or a bug;
  * anything else → null.
  */

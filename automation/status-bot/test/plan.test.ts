@@ -11,11 +11,11 @@ const desired = (p: Partial<Desired> = {}): Desired => ({
   state: { open: true, reason: null },
   assignees: null,
   marker: m,
-  reason: 'branch feature/46-x exists',
+  reason: 'branch feat/46-x exists',
   warnings: [],
   ...p,
 });
-const body = renderCard(m, 'branch feature/46-x exists', [], testConfig.statuses);
+const body = renderCard(m, 'branch feat/46-x exists', [], testConfig.statuses);
 const inSync = (p: Partial<IssueFacts> = {}) =>
   issue({ number: 46, projectStatus: 'inProgress', card: { commentId: 7, body, marker: m }, ...p });
 const kinds = (a: Action[]) => a.map((x) => x.kind);

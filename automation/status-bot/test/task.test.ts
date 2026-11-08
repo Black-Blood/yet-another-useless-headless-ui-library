@@ -25,9 +25,9 @@ Deno.test('taskStatus: merged → Done', () =>
   assertEquals(taskStatus(work({ activeMerged: merged })), { status: 'done', reason: 'PR #52 merged into develop' }));
 
 Deno.test('taskStatus: branch only → In Progress', () =>
-  assertEquals(taskStatus(work({ branches: ['feature/46-x'] })), {
+  assertEquals(taskStatus(work({ branches: ['feat/46-x'] })), {
     status: 'inProgress',
-    reason: 'branch feature/46-x exists',
+    reason: 'branch feat/46-x exists',
   }));
 
 Deno.test('taskStatus: nothing → New', () =>
@@ -40,10 +40,10 @@ Deno.test('taskStatus: draft + merged → In Progress', () =>
   assertEquals(taskStatus(work({ openDraft: [53], activeMerged: merged })).status, 'inProgress'));
 
 Deno.test('taskStatus: merged + leftover branch → Done', () =>
-  assertEquals(taskStatus(work({ activeMerged: merged, branches: ['feature/46-x'] })).status, 'done'));
+  assertEquals(taskStatus(work({ activeMerged: merged, branches: ['feat/46-x'] })).status, 'done'));
 
 Deno.test('taskStatus: nothing left after a revert → New, naming the reverted PR', () =>
   assertEquals(taskStatus(work({ reverted: [4] })), { status: 'new', reason: 'PR #4 reverted' }));
 
 Deno.test('taskStatus: a branch after a revert still means In Progress', () =>
-  assertEquals(taskStatus(work({ reverted: [4], branches: ['feature/46-again'] })).status, 'inProgress'));
+  assertEquals(taskStatus(work({ reverted: [4], branches: ['feat/46-again'] })).status, 'inProgress'));

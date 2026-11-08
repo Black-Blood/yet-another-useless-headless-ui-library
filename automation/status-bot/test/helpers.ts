@@ -10,7 +10,7 @@ export function pull(p: Partial<PullFact> & { number: number }): PullFact {
     state: 'open',
     draft: false,
     baseRef: 'develop',
-    headRef: 'feature/1-x',
+    headRef: 'feat/1-x',
     author: 'dev',
     authorIsMember: true,
     body: '',

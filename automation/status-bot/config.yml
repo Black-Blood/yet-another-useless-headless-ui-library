@@ -10,7 +10,7 @@ statuses:
   canceled: Canceled
 integrationBranch: develop
 branchPrefix:
-  task: feature
+  task: feat
   bug: fix
 typeLabels:
   bug: Bug

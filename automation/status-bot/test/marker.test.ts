@@ -10,14 +10,14 @@ const m = marker({
 const body = renderCard(
   m,
   'PR #52 opened (not draft)',
-  ['Branch feature/49-modal does not match the type of issue #49 (bug) — ignored'],
+  ['Branch feat/49-modal does not match the type of issue #49 (bug) — ignored'],
   testConfig.statuses,
 );
 
 Deno.test('renderCard: shows status, reason, warning and history row', () => {
   assertMatch(body, /^🤖 Status: In Review$/m);
   assertMatch(body, /^Reason: PR #52 opened \(not draft\)$/m);
-  assertMatch(body, /^⚠️ Branch feature\/49-modal/m);
+  assertMatch(body, /^⚠️ Branch feat\/49-modal/m);
   assertMatch(body, /\| 11-07 10:12 \| In Progress \| In Review \| PR #52 opened \(not draft\) \|/);
 });
 

@@ -9,7 +9,7 @@ import { pickQa } from './qa.ts';
 import { storyStatus } from './story.ts';
 import { taskStatus } from './task.ts';
 import { usecaseStatus } from './usecase.ts';
-import { collectWork } from './work.ts';
+import { branchesNaming, collectWork } from './work.ts';
 
 const LAYER: Record<IssueType, number> = { task: 0, bug: 0, story: 1, usecase: 2, cr: 3 };
 const TYPE_NAMES: Record<IssueType, string> = {
@@ -131,6 +131,15 @@ export function reconcile(facts: Facts, config: Config): Desired[] {
     const record = (entry: HistoryEntry) => (history = appendHistory(history, entry, config.historySize));
 
     const storyKids = () => childStatuses(issue.children, ['task', 'bug'], null);
+
+    // §3.4 — only tasks and bugs get branches.
+    if (type !== 'task' && type !== 'bug') {
+      for (const name of branchesNaming(issue.number, facts, config)) {
+        warnings.push(
+          `Branch \`${name.replace(/`/g, '')}\` points to a ${TYPE_NAMES[type]}; only tasks and bugs get branches — ignored`,
+        );
+      }
+    }
     const statuses = (xs: { status: Status }[]) => xs.map((x) => x.status);
     const activeOnly = (xs: Status[]) => xs.filter((s) => s !== 'canceled');
 
