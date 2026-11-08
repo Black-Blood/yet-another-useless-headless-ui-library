@@ -17,7 +17,10 @@ function fakeClients(failOn: (call: string) => boolean = () => false) {
     projectGql: (query, vars) => {
       const call = /mutation[^{]*\{\s*(\w+)/.exec(query)?.[1] ?? 'unknown';
       calls.push({ call, params: vars });
-      return failOn(call) ? Promise.reject(new Error(`${call} failed`)) : Promise.resolve({});
+      if (failOn(call)) return Promise.reject(new Error(`${call} failed`));
+      return Promise.resolve(
+        call === 'addProjectV2ItemById' ? { addProjectV2ItemById: { item: { id: `PVTI_new_${vars.contentId}` } } } : {},
+      );
     },
     rest: {
       request: (route, params) => {
@@ -45,6 +48,17 @@ Deno.test('execute: dry run makes no calls', async () => {
   assertEquals(calls.length, 0);
   assertEquals(r.done.length, all.length);
   assertEquals(r.errors, []);
+});
+
+Deno.test('execute: addToProject reports the new item id', async () => {
+  const { clients } = fakeClients();
+  const r = await execute([all[0]], clients, meta, REPO, false);
+  assertEquals(r.added, [{ issue: 1, itemId: 'PVTI_new_I_1' }]);
+});
+
+Deno.test('execute: a dry run reports placeholder item ids for additions', async () => {
+  const { clients } = fakeClients();
+  assertEquals((await execute([all[0]], clients, meta, REPO, true)).added, [{ issue: 1, itemId: 'dry-run:1' }]);
 });
 
 Deno.test('execute: maps each action to its API call', async () => {
@@ -80,7 +94,7 @@ Deno.test('execute: an error skips the rest of that issue only', async () => {
 
 Deno.test('renderSummary: lists changes, skips and errors', () => {
   const md = renderSummary({
-    result: { done: [all[3]], errors: [{ action: all[6], message: 'boom' }] },
+    result: { done: [all[3]], errors: [{ action: all[6], message: 'boom' }], added: [] },
     blocked: false,
     dryRun: false,
     planned: all,
@@ -92,7 +106,7 @@ Deno.test('renderSummary: lists changes, skips and errors', () => {
 });
 
 Deno.test('renderSummary: says nothing was written when blocked or dry run', () => {
-  const base = { result: { done: [], errors: [] }, planned: all, skipped: [] };
+  const base = { result: { done: [], errors: [], added: [] }, planned: all, skipped: [] };
   assertMatch(renderSummary({ ...base, blocked: true, dryRun: false }), /Nothing was written/);
   assertMatch(renderSummary({ ...base, blocked: false, dryRun: true }), /Nothing was written/);
 });

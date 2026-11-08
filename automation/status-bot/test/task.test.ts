@@ -9,6 +9,7 @@ const work = (w: Partial<Work>): Work => ({
   activeMerged: [],
   allActiveMerged: [],
   branches: [],
+  reverted: [],
   warnings: [],
   ...w,
 });
@@ -40,3 +41,9 @@ Deno.test('taskStatus: draft + merged → In Progress', () =>
 
 Deno.test('taskStatus: merged + leftover branch → Done', () =>
   assertEquals(taskStatus(work({ activeMerged: merged, branches: ['feature/46-x'] })).status, 'done'));
+
+Deno.test('taskStatus: nothing left after a revert → New, naming the reverted PR', () =>
+  assertEquals(taskStatus(work({ reverted: [4] })), { status: 'new', reason: 'PR #4 reverted' }));
+
+Deno.test('taskStatus: a branch after a revert still means In Progress', () =>
+  assertEquals(taskStatus(work({ reverted: [4], branches: ['feature/46-again'] })).status, 'inProgress'));

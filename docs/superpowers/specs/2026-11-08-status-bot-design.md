@@ -18,10 +18,9 @@ Every status change is explained in the issue itself.
    manual action, driven only by work on branches and PRs.
 2. User Story, Use Case and Change Request change status based on the state of
    their child (linked) issues.
-3. A forbidden manual status change is reverted by the next run of the bot — the
-   next repository event (branch, PR or issue) or a manual run. There is no
-   schedule (owner's decision); every run reconciles all issues, so nothing is lost,
-   only delayed.
+3. A forbidden manual status change is reverted by the next run of the bot: the
+   next repository event (branch, PR or issue), the hourly scheduled run, or a
+   manual run. Every run reconciles all issues, so nothing is lost, only delayed.
 4. An issue cannot be moved to Canceled while code from that issue (or its
    descendants) merged into `develop` has not been reverted.
 5. Every issue shows its current status, the reason for it, and the change history.
@@ -39,10 +38,10 @@ Every status change is explained in the issue itself.
 
 | Constraint | Design consequence |
 |---|---|
-| The Project belongs to a personal account | No Issue Types → the type comes from a label. No `projects_v2_item` webhook → manual changes in the Project are detected by the next run |
+| The Project belongs to a personal account | No Issue Types → the type comes from a label. No `projects_v2_item` webhook → manual changes in the Project are detected by the next run (an event or the hourly schedule) |
 | `GITHUB_TOKEN` cannot access a personal account's Project | A PAT `PROJECT_TOKEN` is required (classic, `project` scope) |
 | The repository is public | Outsiders can open issues; their PRs come from forks → `pull_request_target` |
-| GitHub Actions has no trigger for sub-issue or "Blocked by" changes | The next run picks these changes up |
+| GitHub Actions has no trigger for sub-issue or "Blocked by" changes | The next run picks these changes up (at the latest the hourly schedule) |
 | Events caused by `GITHUB_TOKEN` do not trigger workflows | Issue writes go through `GITHUB_TOKEN` → the bot does not loop |
 
 ## 3. Data model
@@ -85,7 +84,9 @@ The bot ignores the `I need help` label.
 - **Integration branch:** `develop` (also the default branch).
 - **Branch names:** `feature/<N>-<slug>` for a Task, `fix/<N>-<slug>` for a Bug,
   where `N` is the issue number. If the prefix does not match the type of issue
-  `N`, the branch is ignored with a warning in the card.
+  `N`, the branch is ignored with a warning in the card. A branch `<N>-<slug>`
+  without a prefix (what GitHub's "Create a branch" button makes) counts for issue
+  `N` whether it is a Task or a Bug.
 - **Linking a PR to an issue:**
   1. by head branch name (same pattern, including PRs from forks);
   2. fallback — a PR linked to the issue through the **Development** sidebar
@@ -312,7 +313,8 @@ If step 2 fails, the next run sees `updatedAt < marker.at` and repeats the write
 The bot adds open repository issues that are not in the Project if the author is
 a **repository member**: the issue's `authorAssociation` ∈ {`OWNER`, `MEMBER`,
 `COLLABORATOR`}. Outsiders' issues are not added — a maintainer adds them after
-triage. The bot neither adds nor processes pull requests in the Project.
+triage. An added issue is reconciled in the same run, using the item id that
+GitHub returns (listing the Project right after adding can miss the new item). The bot neither adds nor processes pull requests in the Project.
 
 ### 6.3 Safeguards
 
@@ -416,6 +418,8 @@ on:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
+  schedule:
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       dry-run: { type: boolean, default: false }
@@ -477,8 +481,9 @@ First a run with `dry-run: true`, then:
 6. Use Case: all User Stories Done → Done.
 7. Change Request: "Blocked by" a User Story added → In Progress; User Story Done →
    Done; an attempt to cancel while the User Story is active → reverted.
-8. A Task set from New to Done by hand → reverted by the next run (trigger one by
-   hand), and the card shows "reverted manual change to Done".
+8. A Task set from New to Done by hand → reverted by the next run (the hourly
+   schedule, or trigger one by hand), and the card shows "reverted manual change to
+   Done".
 9. An outside account creates an issue → it does not appear in the Project.
 
 ## 9. One-time repository setup
@@ -502,7 +507,8 @@ First a run with `dry-run: true`, then:
 
 | Risk | Mitigation |
 |---|---|
-| Without a schedule, changes made only in the Project (status drag, sub-issues, "Blocked by") wait for the next repository event | Every run reconciles everything; close/reopen issues instead of dragging cards where possible, or run the workflow by hand |
+| Changes made only in the Project (status drag, sub-issues, "Blocked by") wait up to an hour | Every run reconciles everything; close/reopen issues instead of dragging cards where possible, or run the workflow by hand |
+| GitHub disables scheduled workflows in a public repository after 60 days without repository activity | Events still run the bot; re-enable with `gh workflow enable status-bot.yml` |
 | The API may not return `updatedAt` / the author of a Project field value | Check at the start of implementation; fallback — detection time, no author |
 | Outsiders name fork branches arbitrarily | Fallback through Development; document the naming rule in CONTRIBUTING |
 | A classic PAT grants broader access than needed | `project` scope only; the secret is passed only to the bot step; Deno lets the bot reach only `api.github.com` |

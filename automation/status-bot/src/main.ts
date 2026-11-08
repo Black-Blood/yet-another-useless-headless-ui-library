@@ -4,7 +4,7 @@
  */
 import { execute } from './apply/execute.ts';
 import type { Clients, RunResult } from './apply/execute.ts';
-import { buildPlan, planAdditions, planIssue } from './apply/plan.ts';
+import { buildPlan, planAdditions, planIssue, withAddedItems } from './apply/plan.ts';
 import { renderSummary } from './apply/summary.ts';
 import { createClient } from './client.ts';
 import { toFacts } from './collect/facts.ts';
@@ -44,18 +44,21 @@ async function main(): Promise<number> {
       new Date().toISOString(),
     );
 
-  let { facts, meta } = await collect();
-  const result: RunResult = { done: [], errors: [] };
+  const collected = await collect();
+  const meta = collected.meta;
+  let facts = collected.facts;
+  const result: RunResult = { done: [], errors: [], added: [] };
   const merge = (r: RunResult) => {
     result.done.push(...r.done);
     result.errors.push(...r.errors);
+    result.added.push(...r.added);
   };
 
-  // §6.2 — add members' issues first, then look again so they are reconciled in this run.
+  // §6.2 — add members' issues first and reconcile them in this run, using the item ids GitHub returned.
   const additions = planAdditions(facts);
   if (additions.length > 0) {
     merge(await execute(additions, clients, meta, repo, dryRun));
-    if (!dryRun) ({ facts, meta } = await collect());
+    facts = withAddedItems(facts, result.added);
   }
 
   const desired = reconcile(facts, config);

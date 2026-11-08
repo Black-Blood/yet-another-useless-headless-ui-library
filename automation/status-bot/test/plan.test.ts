@@ -1,5 +1,5 @@
 import { assertEquals } from '@std/assert';
-import { buildPlan, planAdditions, planIssue } from '../src/apply/plan.ts';
+import { buildPlan, planAdditions, planIssue, withAddedItems } from '../src/apply/plan.ts';
 import { renderCard } from '../src/collect/marker.ts';
 import type { Action, Desired, IssueFacts } from '../src/types.ts';
 import { facts, issue, marker, testConfig } from './helpers.ts';
@@ -82,4 +82,13 @@ Deno.test('buildPlan: 30 changed issues pass', () => {
   const p = buildPlan(writes(30), 30, false);
   assertEquals(p.blocked, false);
   assertEquals(p.actions.length, 30);
+});
+
+Deno.test('withAddedItems: newly added issues get their item id and no status', () => {
+  const before = facts([issue({ number: 1, itemId: null, projectStatus: null }), issue({ number: 2 })]);
+  const after = withAddedItems(before, [{ issue: 1, itemId: 'PVTI_new' }]);
+  assertEquals(after.issues.get(1)?.itemId, 'PVTI_new');
+  assertEquals(after.issues.get(1)?.projectStatus, null);
+  assertEquals(after.issues.get(2), before.issues.get(2));
+  assertEquals(before.issues.get(1)?.itemId, null, 'the input is not mutated');
 });

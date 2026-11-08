@@ -74,10 +74,11 @@ Deno.test('toFacts: pull requests', () => {
   );
 });
 
-Deno.test('toFacts: only feature/ and fix/ branches are kept', () =>
+Deno.test('toFacts: only branches that name an issue are kept', () =>
   assertEquals(facts.branches, [
     { name: 'feature/1-a', lastCommitAt: '2026-11-03T00:00:00Z' },
     { name: 'fix/2-b', lastCommitAt: '2026-11-04T00:00:00Z' },
+    { name: '3-from-button', lastCommitAt: '2026-11-05T00:00:00Z' },
   ]));
 
 Deno.test('toFacts: bot card is found', () => {
