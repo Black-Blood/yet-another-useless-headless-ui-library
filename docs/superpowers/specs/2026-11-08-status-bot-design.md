@@ -40,7 +40,8 @@ Every status change is explained in the issue itself.
 |---|---|
 | The Project belongs to a personal account | No Issue Types → the type comes from a label. No `projects_v2_item` webhook → manual changes in the Project are detected by the next run (an event or the hourly schedule) |
 | `GITHUB_TOKEN` cannot access a personal account's Project | A PAT `PROJECT_TOKEN` is required (classic, `project` scope) |
-| The repository is public | Outsiders can open issues; their PRs come from forks → `pull_request_target` |
+| The repository is public | Outsiders can open issues; their PRs come from forks, whose `pull_request` runs get no secrets → those runs are skipped and fork PRs are reconciled by the next event or the hourly schedule |
+| GitHub blocks `pull_request_target` in public repositories by default from 2026-12-02 | The bot listens to `pull_request`, not `pull_request_target` |
 | GitHub Actions has no trigger for sub-issue or "Blocked by" changes | The next run picks these changes up (at the latest the hourly schedule) |
 | Events caused by `GITHUB_TOKEN` do not trigger workflows | Issue writes go through `GITHUB_TOKEN` → the bot does not loop |
 
@@ -426,7 +427,7 @@ historySize: 20
 on:
   create:
   delete:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
@@ -449,8 +450,11 @@ permissions:
 
 - **Every run is a full reconciliation** of all issues in the Project; an event
   only makes it happen sooner.
-- `pull_request_target` runs the bot's code from `develop` and **never** checks
-  out the PR's code.
+- The job always checks out and runs the bot's code from `develop`, never the
+  PR's code.
+- `pull_request` runs for PRs from forks get no secrets, so the job is skipped
+  for them (`if: … head.repo.full_name == github.repository`); the next event or
+  the hourly schedule picks such PRs up.
 - `PROJECT_TOKEN` is passed only to the step that runs the bot.
 
 ### 7.4 Tokens
