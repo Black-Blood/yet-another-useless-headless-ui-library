@@ -3,7 +3,10 @@ name: status-bot
 on:
   create:
   delete:
-  pull_request_target:
+  # pull_request, not pull_request_target: GitHub blocks pull_request_target in public repositories by default
+  # from 2026-12-02. PRs from forks get no secrets, so their runs are skipped below; the next event or the
+  # hourly schedule reconciles them.
+  pull_request:
     types: [opened, reopened, closed, edited, ready_for_review, converted_to_draft]
   issues:
     types: [opened, closed, reopened, labeled, unlabeled]
@@ -33,10 +36,12 @@ permissions:
 
 jobs:
   reconcile:
+    # Fork PRs run without secrets (no PROJECT_TOKEN): skip them instead of failing.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # Always the bot's own code from the default branch — never the PR head (pull_request_target).
+      # Always the bot's own code from the default branch, never the PR head.
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
